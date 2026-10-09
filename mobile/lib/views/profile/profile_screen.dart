@@ -8,7 +8,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  // 1. Simpan data di variabel state
+  //simpan data di variabel state
   String _userName = 'Bayu Cahyo';
   String _userEmail = 'bayu.cahyo@email.com';
 
@@ -17,6 +17,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _suaraGetar = true;
   int _selectedTab = 0;
 
+  //atur warna 
   static const Color _primaryColor = Color(0xFF4A90D9);
   static const Color _bgColor = Color(0xFFF0F4F8);
 
@@ -70,7 +71,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // 2. Card Profil dengan tombol Edit yang berfungsi
+  //card Profil 
   Widget _buildProfileCard() {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 24),
@@ -93,7 +94,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   radius: 40,
                   backgroundColor: _primaryColor.withOpacity(0.2),
                   child: Text(
-                    // Ambil inisial dari nama
+                    // ambil inisial dari nama
                     _userName.split(' ').map((e) => e[0]).take(2).join().toUpperCase(),
                     style: const TextStyle(
                       fontSize: 24,
@@ -103,7 +104,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
               ),
-              // Tombol Edit yang sekarang bisa diklik!
+              //tombol edit
               Positioned(
                 bottom: 0,
                 right: 0,
@@ -116,12 +117,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            _userName, // Pakai variabel state
+            _userName, //variabel state
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
-            _userEmail, // Pakai variabel state
+            _userEmail, //variabel state
             style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           ),
         ],
@@ -129,7 +130,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // 3. Fungsi untuk menampilkan Dialog Edit
+  //fungsi untuk menampilkan form edit
   void _showEditProfileDialog() {
     final nameController = TextEditingController(text: _userName);
     final emailController = TextEditingController(text: _userEmail);
@@ -159,7 +160,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           TextButton(
             onPressed: () {
-              // Update state dengan data baru
+              // update state dengan data baru
               setState(() {
                 _userName = nameController.text;
                 _userEmail = emailController.text;
