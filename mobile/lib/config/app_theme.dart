@@ -1,55 +1,43 @@
 import 'package:flutter/material.dart';
 import 'app_constant.dart';
 
-
 class AppTheme {
 
+  static ThemeData theme = ThemeData(
 
-static ThemeData theme = ThemeData(
+    scaffoldBackgroundColor:
+        AppColors.background,
 
-  scaffoldBackgroundColor:
-      AppColors.background,
+    primaryColor:
+        AppColors.primary,
 
+    fontFamily: "PlusJakartaSans",
 
-  primaryColor:
-      AppColors.primary,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: AppColors.primary,
+    ).copyWith(
+      primary: AppColors.primary,
+      secondary: AppColors.secondary,
+      tertiary: AppColors.tertiary,
+      surface: AppColors.white,
+    ),
 
+    appBarTheme: const AppBarTheme(
 
-  fontFamily: "Poppins",
+      backgroundColor:
+          AppColors.white,
 
+      elevation: 0,
 
-  colorScheme: ColorScheme.fromSeed(
-      seedColor: AppColors.primary
-  ),
+      iconTheme: IconThemeData(
+        color: AppColors.navy,
+      ),
 
-
-  appBarTheme: const AppBarTheme(
-
-    backgroundColor:
-        Colors.white,
-
-    elevation: 0,
-
-    iconTheme:
-        IconThemeData(
-          color: AppColors.navy
-        ),
-
-    titleTextStyle:
-        TextStyle(
-
-          color: AppColors.navy,
-
-          fontSize: 18,
-
-          fontWeight:
-          FontWeight.bold,
-
-        ),
-
-  ),
-
-
-);
-
+      titleTextStyle: TextStyle(
+        color: AppColors.navy,
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+  );
 }
