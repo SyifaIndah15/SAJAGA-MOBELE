@@ -1,47 +1,23 @@
 import 'package:flutter/material.dart';
+import '../../config/app_constant.dart';
+import '../widgets/medication_form_field.dart';
 
-/// Screen Edit Jadwal Obat Khusus Hari Ini (Saat Jadwal Terlewat) - SAJAGA App
-/// Lokasi file: lib/views/medication/edit_medication_screen.dart
 class EditMedicationScreen extends StatefulWidget {
+  final String medicationId;
   final String medicationName;
   final String dosage;
-  final String frequencyTarget;
-  final List<EditDoseItem> initialDoses;
+  final String frequency;
+  final String mealInstruction;
+  final List<EditableSchedule> initialSchedules;
 
   const EditMedicationScreen({
     super.key,
-    this.medicationName = 'Sangobion',
-    this.dosage = '500 mg',
-    this.frequencyTarget = 'Target: 3 Kali',
-    this.initialDoses = const [
-      EditDoseItem(
-        label: 'Dosis Pagi',
-        routineTime: '08.00',
-        actualTime: '07.15',
-        tag: 'JAM 1',
-        iconType: DoseIconType.morning,
-        status: DoseEditStatus.alreadyTaken,
-        note: 'Tercatat diminum pukul 07.15 WIB (Tidak dapat diubah)',
-      ),
-      EditDoseItem(
-        label: 'Dosis Siang',
-        routineTime: '13.00',
-        actualTime: '14.00',
-        tag: 'JAM 2',
-        iconType: DoseIconType.afternoon,
-        status: DoseEditStatus.rescheduled,
-        note: 'Jarak interval aman: 6 jam 45 menit dari Dosis Pagi',
-      ),
-      EditDoseItem(
-        label: 'Dosis Malam',
-        routineTime: '20.00',
-        actualTime: '20.00',
-        tag: 'JAM 3',
-        iconType: DoseIconType.night,
-        status: DoseEditStatus.adjusted,
-        note: 'Interval ideal: 7 jam dari Dosis Siang untuk penyerapan optimal',
-      ),
-    ],
+    required this.medicationId,
+    required this.medicationName,
+    required this.dosage,
+    required this.frequency,
+    required this.mealInstruction,
+    required this.initialSchedules,
   });
 
   @override
@@ -49,326 +25,178 @@ class EditMedicationScreen extends StatefulWidget {
 }
 
 class _EditMedicationScreenState extends State<EditMedicationScreen> {
-  late TextEditingController _nameController;
-  late TextEditingController _doseController;
-  late List<EditDoseItem> _doses;
-
-  String _selectedFrequency = '3x Sehari';
-  final List<String> _frequencies = [
-    '1x Sehari',
-    '2x Sehari',
-    '3x Sehari',
-    'Sesuai Kebutuhan',
-  ];
-
-  MealInstruction _mealInstruction = MealInstruction.afterMeal;
+  late List<EditableSchedule> _schedules;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.medicationName);
-    _doseController = TextEditingController(text: widget.dosage);
-    _doses = List.from(widget.initialDoses);
+    _schedules = List.from(widget.initialSchedules);
   }
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _doseController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _pickTime(int index) async {
-    if (_doses[index].status == DoseEditStatus.alreadyTaken) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Dosis ini sudah diminum dan tidak dapat diubah.'),
-          backgroundColor: Color(0xFF64748B),
-          duration: Duration(seconds: 2),
-        ),
+  void _updateScheduleTime(int index, String newTime) {
+    setState(() {
+      _schedules[index] = _schedules[index].copyWith(
+        time: newTime,
+        isAdjusted: true,
       );
-      return;
-    }
-
-    final currentTimeStr = _doses[index].actualTime;
-    final parts = currentTimeStr.split('.');
-    final initialTime = TimeOfDay(
-      hour: int.tryParse(parts[0]) ?? 14,
-      minute: parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0,
-    );
-
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: initialTime,
-    );
-
-    if (picked != null) {
-      final formattedHour = picked.hour.toString().padLeft(2, '0');
-      final formattedMinute = picked.minute.toString().padLeft(2, '0');
-      setState(() {
-        _doses[index] = _doses[index].copyWith(
-          actualTime: '$formattedHour.$formattedMinute',
-        );
-
-        if (_doses[index].label == 'Dosis Siang' && _doses.length > 2) {
-          int nextHour = (picked.hour + 6) % 24;
-          final nextHourStr = nextHour.toString().padLeft(2, '0');
-          _doses[2] = _doses[2].copyWith(
-            actualTime: '$nextHourStr.00',
-            note: 'Interval ideal: disesuaikan dari Dosis Siang ($formattedHour.$formattedMinute)',
-          );
-        }
-      });
-    }
-  }
-
-  void _saveChanges() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Jadwal penyesuaian khusus hari ini untuk "${_nameController.text}" berhasil disimpan!',
-        ),
-        backgroundColor: const Color(0xFF0288D1),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-
-    Navigator.of(context).pop();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F9FD),
-      body: SafeArea(
+      backgroundColor: AppColors.background,
+      appBar: _buildAppBar(),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildAppBar(),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildFieldLabel('Nama Obat', isRequired: true),
-                    const SizedBox(height: 6),
-                    _buildNameField(),
-                    const SizedBox(height: 18),
-
-                    _buildFieldLabel('Dosis', isRequired: true),
-                    const SizedBox(height: 6),
-                    _buildDoseField(),
-                    const SizedBox(height: 20),
-
-                    _buildFrequencySection(),
-                    const SizedBox(height: 22),
-
-                    _buildDosageScheduleSection(),
-                    const SizedBox(height: 22),
-
-                    _buildFieldLabel('Instruksi Terkait Jam Makan'),
-                    const SizedBox(height: 10),
-                    _buildMealInstructionCard(),
-                    const SizedBox(height: 20),
-
-                    _buildSpecialNoticeCard(),
-                    const SizedBox(height: 22),
-
-                    _buildFieldLabel('Pratinjau Pengingat Hari Ini'),
-                    const SizedBox(height: 10),
-                    _buildPreviewCard(),
-                    const SizedBox(height: 24),
-
-                    _buildSubmitButton(),
-                    const SizedBox(height: 10),
-                    const Center(
-                      child: Text(
-                        'Notifikasi alarm akan diperbarui secara otomatis di perangkat Anda.',
-                        style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                  ],
-                ),
-              ),
+            MedicationFormField(
+              label: 'Nama Obat',
+              hintText: widget.medicationName,
+              suffixIcon: Icons.link,
+              isRequired: true,
+              enabled: false,
             ),
+            const SizedBox(height: 16),
+            MedicationFormField(
+              label: 'Dosis',
+              hintText: widget.dosage,
+              suffixIcon: Icons.medication,
+              isRequired: true,
+              enabled: false,
+            ),
+            const SizedBox(height: 20),
+            _buildFrequencySection(),
+            const SizedBox(height: 20),
+            _buildScheduleSection(),
+            const SizedBox(height: 20),
+            _buildMealInstructionSection(),
+            const SizedBox(height: 20),
+            _buildSpecialNotice(),
+            const SizedBox(height: 24),
+            _buildPreviewSection(),
+            const SizedBox(height: 16),
+            _buildSaveButton(),
+            const SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildAppBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              IconButton(
-                onPressed: () => Navigator.of(context).maybePop(),
-                icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF334155), size: 24),
-              ),
-              const SizedBox(width: 8),
-              const CircleAvatar(
-                radius: 17,
-                backgroundColor: Color(0xFF0288D1),
-                child: Icon(Icons.medical_services_rounded, color: Colors.white, size: 18),
-              ),
-              const SizedBox(width: 10),
-              const Text('Edit Jadwal Obat', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-            ],
-          ),
-          const CircleAvatar(
-            radius: 18,
-            backgroundColor: Color(0xFF0288D1),
-            child: Icon(Icons.person, color: Colors.white, size: 20),
-          ),
-        ],
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: AppColors.background,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios, color: AppColors.navy, size: 20),
+        onPressed: () => Navigator.pop(context),
       ),
-    );
-  }
-
-  Widget _buildFieldLabel(String label, {bool isRequired = false}) {
-    return Row(
-      children: [
-        Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
-        if (isRequired) ...[
-          const SizedBox(width: 3),
-          const Text('*', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.redAccent)),
-        ],
+      title: const Text(
+        'Edit Jadwal Obat',
+        style: TextStyle(
+          fontFamily: 'PlusJakartaSans',
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: AppColors.navy,
+        ),
+      ),
+      centerTitle: true,
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: CircleAvatar(
+            backgroundColor: AppColors.lightBlue,
+            child: const Icon(Icons.person, color: AppColors.primary, size: 20),
+          ),
+        ),
       ],
-    );
-  }
-
-  Widget _buildNameField() {
-    return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2)),
-      child: TextField(
-        controller: _nameController,
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-        decoration: const InputDecoration(contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 14), border: InputBorder.none, suffixIcon: Icon(Icons.medication_outlined, color: Color(0xFF0288D1))),
-      ),
-    );
-  }
-
-  Widget _buildDoseField() {
-    return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2)),
-      child: TextField(
-        controller: _doseController,
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-        decoration: const InputDecoration(contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 14), border: InputBorder.none, suffixIcon: Icon(Icons.vaccines_outlined, color: Color(0xFF0288D1))),
-      ),
     );
   }
 
   Widget _buildFrequencySection() {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('Frekuensi Konsumsi', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-            Text(widget.frequencyTarget, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF0288D1))),
-          ],
-        ),
-        const SizedBox(height: 10),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, mainAxisSpacing: 10, crossAxisSpacing: 12, childAspectRatio: 3.1),
-          itemCount: _frequencies.length,
-          itemBuilder: (context, index) {
-            final item = _frequencies[index];
-            final bool isSelected = _selectedFrequency == item;
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(color: isSelected ? const Color(0xFFBAE6FD) : Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: isSelected ? const Color(0xFF0288D1) : const Color(0xFFE2E8F0))),
-              child: Row(
-                children: [
-                  CircleAvatar(radius: 5, backgroundColor: isSelected ? const Color(0xFF0288D1) : Colors.transparent),
-                  const SizedBox(width: 8),
-                  Text(item, style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500, color: isSelected ? const Color(0xFF0369A1) : const Color(0xFF475569))),
-                ],
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
+    final targetCount = _getTargetCount();
 
-  Widget _buildDosageScheduleSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Jadwal Waktu Minum Hari Ini', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-            Text('${_doses.length} kali per hari', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+            _sectionTitle('Frekuensi Konsumsi'),
+            Text(
+              'Target: $targetCount Kali',
+              style: const TextStyle(
+                fontFamily: 'PlusJakartaSans',
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            _FrequencyOption(label: '1x Sehari', isSelected: widget.frequency == '1x Sehari'),
+            _FrequencyOption(label: '2x Sehari', isSelected: widget.frequency == '2x Sehari'),
+            _FrequencyOption(label: '3x Sehari', isSelected: widget.frequency == '3x Sehari'),
+            _FrequencyOption(label: 'Sesuai Kebutuhan', isSelected: widget.frequency == 'Sesuai Kebutuhan'),
+          ],
+        ),
+      ],
+    );
+  }
+
+  int _getTargetCount() {
+    switch (widget.frequency) {
+      case '1x Sehari': return 1;
+      case '2x Sehari': return 2;
+      case '3x Sehari': return 3;
+      default: return _schedules.length;
+    }
+  }
+
+  Widget _buildScheduleSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _sectionTitle('Jadwal Waktu Minum Hari Ini'),
+            Text(
+              '${_schedules.length} kali per hari',
+              style: const TextStyle(
+                fontFamily: 'PlusJakartaSans',
+                fontSize: 13,
+                color: AppColors.grey,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 4),
         Text(
-          _doses.any((d) => d.status == DoseEditStatus.alreadyTaken)
-              ? 'Dosis 1 telah selesai tercatat. Anda dapat mengatur ulang Dosis 2 dan Dosis 3.'
-              : 'Atur ulang jadwal dosis untuk hari ini sesuai ritme harian Anda.',
-          style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+          'Atur ulang jadwal ${_schedules.first.label} untuk hari ini sesuai ritme harian Anda.',
+          style: const TextStyle(
+            fontFamily: 'PlusJakartaSans',
+            fontSize: 12,
+            color: AppColors.grey,
+          ),
         ),
         const SizedBox(height: 12),
-        ..._doses.asMap().entries.map((entry) {
+        ..._schedules.asMap().entries.map((entry) {
           final index = entry.key;
-          final item = entry.value;
-          final bool isTaken = item.status == DoseEditStatus.alreadyTaken;
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFF1F5F9))),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: isTaken ? const Color(0xFFE0F2FE) : const Color(0xFFBAE6FD),
-                          child: Icon(isTaken ? Icons.done_all : Icons.wb_sunny_rounded, color: const Color(0xFF0288D1), size: 20),
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(item.label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                            Text(isTaken ? 'Sudah Diminum' : item.status == DoseEditStatus.rescheduled ? 'Diatur Ulang' : 'Disesuaikan', style: const TextStyle(fontSize: 10, color: Color(0xFF0288D1))),
-                          ],
-                        ),
-                      ],
-                    ),
-                    InkWell(
-                      onTap: () => _pickTime(index),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: isTaken ? const Color(0xFFCBD5E1) : const Color(0xFF1E293B))),
-                        child: Row(
-                          children: [
-                            Text(item.actualTime, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isTaken ? const Color(0xFF64748B) : const Color(0xFF1E293B))),
-                            const SizedBox(width: 6),
-                            Icon(isTaken ? Icons.lock_outline_rounded : Icons.access_time_rounded, size: 16, color: isTaken ? const Color(0xFF94A3B8) : const Color(0xFF0288D1)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(item.note, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-              ],
+          final schedule = entry.value;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _EditableScheduleItem(
+              schedule: schedule,
+              onTimeChanged: (newTime) => _updateScheduleTime(index, newTime),
             ),
           );
         }),
@@ -376,27 +204,94 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
     );
   }
 
-  Widget _buildMealInstructionCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFF1F5F9))),
-      child: const Text('Anjuran Waktu Konsumsi: Setelah Makan', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+  Widget _buildMealInstructionSection() {
+    final isBeforeMeal = widget.mealInstruction == 'Sebelum Makan';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle('Instruksi Terkait Jam Makan'),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.lightBlue.withOpacity(0.5)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.restaurant, color: AppColors.primary, size: 18),
+                  SizedBox(width: 8),
+                  Text(
+                    'Anjuran Waktu Konsumsi',
+                    style: TextStyle(
+                      fontFamily: 'PlusJakartaSans',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.navy,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _MealToggle(label: 'Sebelum Makan', isSelected: isBeforeMeal),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _MealToggle(label: 'Setelah Makan', isSelected: !isBeforeMeal),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildSpecialNoticeCard() {
+  Widget _buildSpecialNotice() {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: const Color(0xFFF0F9FF), borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFBAE6FD), width: 1.2)),
-      child: Row(
+      decoration: BoxDecoration(
+        color: AppColors.lightBlue.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.lightBlue),
+      ),
+      child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Icon(Icons.info_rounded, color: Color(0xFF0288D1), size: 22),
+        children: [
+          Icon(Icons.info_outline, color: AppColors.primary, size: 20),
           SizedBox(width: 12),
           Expanded(
-            child: Text(
-              'Pemberitahuan Khusus: Pengaturan ini hanya berlaku untuk hari ini. Jadwal akan otomatis kembali ke setelan awal (jadwal rutin) mulai esok hari setelah dosis malam selesai diminum.',
-              style: TextStyle(fontSize: 11, color: Color(0xFF0C4A6E), height: 1.4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Pemberitahuan Khusus',
+                  style: TextStyle(
+                    fontFamily: 'PlusJakartaSans',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.navy,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Pengaturan ini hanya berlaku untuk hari ini. Jadwal akan otomatis kembali ke setelan awal (jadwal rutin) mulai besok hari setelah dosis malam selesai diminum.',
+                  style: TextStyle(
+                    fontFamily: 'PlusJakartaSans',
+                    fontSize: 12,
+                    color: AppColors.grey,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -404,67 +299,534 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
     );
   }
 
-  Widget _buildPreviewCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: const Color(0xFFF8FCFF), borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFE0F2FE))),
-      child: const Text('Penyesuaian Khusus Hari Ini - Status: Siap Aktif', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF0288D1))),
+  Widget _buildPreviewSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle('Pratinjau Pengingat Hari Ini'),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.lightBlue.withOpacity(0.5)),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      widget.medicationName,
+                      style: const TextStyle(
+                        fontFamily: 'PlusJakartaSans',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.navy,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.lightBlue,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      widget.dosage,
+                      style: const TextStyle(
+                        fontFamily: 'PlusJakartaSans',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ..._schedules.map((schedule) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _PreviewTimelineItem(
+                      time: '${schedule.time} WIB',
+                      meal: widget.mealInstruction,
+                      label: schedule.label,
+                      isAdjusted: schedule.isAdjusted,
+                    ),
+                  )),
+              const Divider(height: 1),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.lightBlue,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.calendar_today, color: AppColors.primary, size: 12),
+                        SizedBox(width: 4),
+                        Text(
+                          'Penyesuaian Khusus Hari Ini',
+                          style: TextStyle(
+                            fontFamily: 'PlusJakartaSans',
+                            fontSize: 11,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Text(
+                    'Status: Siap Aktif',
+                    style: TextStyle(
+                      fontFamily: 'PlusJakartaSans',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildSubmitButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: ElevatedButton(
-        onPressed: _saveChanges,
-        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0288D1), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28))),
-        child: const Text('SIMPAN PERUBAHAN JADWAL', style: TextStyle(fontWeight: FontWeight.bold)),
+  Widget _buildSaveButton() {
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton.icon(
+            onPressed: _handleSave,
+            icon: const Icon(Icons.check_circle_outline, size: 20),
+            label: const Text(
+              'SIMPAN PERUBAHAN JADWAL',
+              style: TextStyle(
+                fontFamily: 'PlusJakartaSans',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              elevation: 0,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Notifikasi alarm akan diperbarui secara otomatis di perangkat Anda.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: 'PlusJakartaSans',
+            fontSize: 12,
+            color: AppColors.grey,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _handleSave() {
+    print('Simpan perubahan jadwal untuk obat ${widget.medicationName}');
+    Navigator.pop(context);
+  }
+
+  Widget _sectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontFamily: 'PlusJakartaSans',
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: AppColors.navy,
       ),
     );
   }
 }
 
-enum MealInstruction { beforeMeal, afterMeal }
-enum DoseIconType { morning, afternoon, night }
-enum DoseEditStatus { alreadyTaken, rescheduled, adjusted }
+// ═══════════════════════════════════════════════════════════════
+// DATA MODELS
+// ═══════════════════════════════════════════════════════════════
 
-class EditDoseItem {
+class EditableSchedule {
   final String label;
-  final String routineTime;
-  final String actualTime;
+  final String time;
   final String tag;
-  final DoseIconType iconType;
-  final DoseEditStatus status;
-  final String note;
+  final bool isAdjusted;
 
-  const EditDoseItem({
+  const EditableSchedule({
     required this.label,
-    required this.routineTime,
-    required this.actualTime,
+    required this.time,
     required this.tag,
-    required this.iconType,
-    required this.status,
-    required this.note,
+    this.isAdjusted = false,
   });
 
-  EditDoseItem copyWith({
+  EditableSchedule copyWith({
     String? label,
-    String? routineTime,
-    String? actualTime,
+    String? time,
     String? tag,
-    DoseIconType? iconType,
-    DoseEditStatus? status,
-    String? note,
+    bool? isAdjusted,
   }) {
-    return EditDoseItem(
+    return EditableSchedule(
       label: label ?? this.label,
-      routineTime: routineTime ?? this.routineTime,
-      actualTime: actualTime ?? this.actualTime,
+      time: time ?? this.time,
       tag: tag ?? this.tag,
-      iconType: iconType ?? this.iconType,
-      status: status ?? this.status,
-      note: note ?? this.note,
+      isAdjusted: isAdjusted ?? this.isAdjusted,
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELPER WIDGETS
+// ═══════════════════════════════════════════════════════════════
+
+class _FrequencyOption extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+
+  const _FrequencyOption({
+    required this.label,
+    required this.isSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: 0.6, // ← PERBAIKAN: pakai Opacity widget, bukan parameter BoxDecoration
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.lightBlue : Colors.white,
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.lightBlue.withValues(alpha: 0.5),
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 18,
+              height: 18,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected ? AppColors.primary : Colors.white,
+                border: Border.all(
+                  color: isSelected ? AppColors.primary : AppColors.grey.withValues(alpha: 0.4),
+                ),
+              ),
+              child: isSelected
+                  ? const Icon(Icons.check, color: Colors.white, size: 12)
+                  : null,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'PlusJakartaSans',
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? AppColors.primary : AppColors.navy,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EditableScheduleItem extends StatelessWidget {
+  final EditableSchedule schedule;
+  final ValueChanged<String> onTimeChanged;
+
+  const _EditableScheduleItem({
+    required this.schedule,
+    required this.onTimeChanged,
+  });
+
+  IconData _getIcon() {
+    if (schedule.label.toLowerCase().contains('pagi')) return Icons.wb_sunny_outlined;
+    if (schedule.label.toLowerCase().contains('siang')) return Icons.wb_sunny;
+    if (schedule.label.toLowerCase().contains('malam')) return Icons.nightlight_round;
+    return Icons.access_time;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.lightBlue.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: const BoxDecoration(
+                  color: AppColors.lightBlue,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(_getIcon(), color: AppColors.primary, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      schedule.label,
+                      style: const TextStyle(
+                        fontFamily: 'PlusJakartaSans',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.navy,
+                      ),
+                    ),
+                    if (schedule.isAdjusted) ...[
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.lightBlue,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          'Disesuaikan',
+                          style: TextStyle(
+                            fontFamily: 'PlusJakartaSans',
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Sesuai interval optimal',
+                        style: TextStyle(
+                          fontFamily: 'PlusJakartaSans',
+                          fontSize: 11,
+                          color: AppColors.grey,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: () async {
+                  final TimeOfDay? picked = await showTimePicker(
+                    context: context,
+                    initialTime: _parseTime(schedule.time),
+                  );
+                  if (picked != null) {
+                    final formatted = '${picked.hour.toString().padLeft(2, '0')}.${picked.minute.toString().padLeft(2, '0')}';
+                    onTimeChanged(formatted);
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.navy, width: 1.5),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        schedule.time,
+                        style: const TextStyle(
+                          fontFamily: 'PlusJakartaSans',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.navy,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(Icons.access_time, color: AppColors.navy, size: 16),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.lightBlue,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  schedule.tag,
+                  style: const TextStyle(
+                    fontFamily: 'PlusJakartaSans',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (schedule.isAdjusted) ...[
+            const SizedBox(height: 8),
+            const Row(
+              children: [
+                Icon(Icons.info_outline, color: AppColors.primary, size: 14),
+                SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Interval aman untuk penyerapan optimal tubuh',
+                    style: TextStyle(
+                      fontFamily: 'PlusJakartaSans',
+                      fontSize: 11,
+                      color: AppColors.grey,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  TimeOfDay _parseTime(String time) {
+    final parts = time.split('.');
+    return TimeOfDay(
+      hour: int.parse(parts[0]),
+      minute: int.parse(parts[1]),
+    );
+  }
+}
+
+class _MealToggle extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+
+  const _MealToggle({
+    required this.label,
+    required this.isSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: 0.6, // ← PERBAIKAN: pakai Opacity widget
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.grey.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: 'PlusJakartaSans',
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: isSelected ? Colors.white : AppColors.navy,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PreviewTimelineItem extends StatelessWidget {
+  final String time;
+  final String meal;
+  final String label;
+  final bool isAdjusted;
+
+  const _PreviewTimelineItem({
+    required this.time,
+    required this.meal,
+    required this.label,
+    required this.isAdjusted,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Column(
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                color: AppColors.primary,
+                shape: BoxShape.circle,
+              ),
+            ),
+            Container(width: 2, height: 40, color: AppColors.lightBlue),
+          ],
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                time,
+                style: const TextStyle(
+                  fontFamily: 'PlusJakartaSans',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.navy,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '$meal • $label${isAdjusted ? " • Disesuaikan" : ""}',
+                style: const TextStyle(
+                  fontFamily: 'PlusJakartaSans',
+                  fontSize: 12,
+                  color: AppColors.grey,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Icon(Icons.notifications_outlined, color: AppColors.grey, size: 20),
+      ],
     );
   }
 }

@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
+import '../../config/app_constant.dart';
 
-/// Screen Detail Obat (Detail Medication Screen) - SAJAGA App
-/// Lokasi file: lib/views/medication/detail_medication_screen.dart
 class DetailMedicationScreen extends StatefulWidget {
+  final String medicationId;
   final String medicationName;
   final String dosage;
-  final String form;
+  final String mealInstruction; // 'Sebelum Makan' atau 'Setelah Makan'
 
   const DetailMedicationScreen({
     super.key,
-    this.medicationName = 'Paracetamol',
-    this.dosage = '500 mg',
-    this.form = 'Tablet',
+    required this.medicationId,
+    required this.medicationName,
+    required this.dosage,
+    required this.mealInstruction,
   });
 
   @override
@@ -19,417 +20,532 @@ class DetailMedicationScreen extends StatefulWidget {
 }
 
 class _DetailMedicationScreenState extends State<DetailMedicationScreen> {
-  // Status switch alarm pengingat
-  bool _isAlarmActive = true;
+  bool _isAlarmEnabled = true;
 
-  // Dialog konfirmasi hapus obat
-  void _showDeleteConfirmationDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: const Row(
-            children: [
-              Icon(Icons.delete_outline_rounded, color: Color(0xFFDC2626), size: 24),
-              SizedBox(width: 8),
-              Text(
-                'Hapus Obat?',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
-                ),
-              ),
-            ],
-          ),
-          content: Text(
-            'Apakah Anda yakin ingin menghapus jadwal obat "${widget.medicationName}"? Data jadwal dan riwayat obat ini akan dihapus.',
-            style: const TextStyle(
-              fontSize: 13,
-              color: Color(0xFF64748B),
-              height: 1.4,
-            ),
-          ),
-          actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text(
-                'Batal',
-                style: TextStyle(
-                  color: Color(0xFF64748B),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Tutup dialog
-                Navigator.of(context).pop(); // Kembali ke list
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Obat "${widget.medicationName}" berhasil dihapus'),
-                    backgroundColor: const Color(0xFFDC2626),
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFDC2626),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Ya, Hapus',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  // Data dummy jadwal minum hari ini
+  final List<DoseSchedule> _todaySchedules = [
+    DoseSchedule(
+      id: '1',
+      time: '08.00',
+      timeLabel: 'Pagi',
+      doseLabel: 'Dosis 1',
+      doseInfo: '1 tablet (500mg)',
+      status: DoseStatus.taken,
+      takenTime: '08.05',
+    ),
+    DoseSchedule(
+      id: '2',
+      time: '14.00',
+      timeLabel: 'Siang',
+      doseLabel: 'Dosis 2',
+      doseInfo: '1 tablet (500mg)',
+      status: DoseStatus.upcoming,
+      hoursRemaining: 2,
+    ),
+    DoseSchedule(
+      id: '3',
+      time: '20.00',
+      timeLabel: 'Malam',
+      doseLabel: 'Dosis 3',
+      doseInfo: '1 tablet (500mg)',
+      status: DoseStatus.upcoming,
+      isTonight: true,
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F9FD),
-      body: SafeArea(
+      backgroundColor: AppColors.background,
+      appBar: _buildAppBar(),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Top Bar
-            _buildAppBar(),
-
-            // 2. Scrollable Body Content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Hero Header Card
-                    _buildHeroCard(),
-                    const SizedBox(height: 24),
-
-                    // Section: Jadwal Minum Hari Ini
-                    const Text(
-                      'Jadwal Minum Hari Ini',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildScheduleSection(),
-                    const SizedBox(height: 24),
-
-                    // Section: Petunjuk & Aturan Konsumsi
-                    const Text(
-                      'Petunjuk & Aturan Konsumsi',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildInstructionCard(),
-                    const SizedBox(height: 20),
-
-                    // Section: Alarm Pengingat & Sisa Stok
-                    _buildAlarmAndStockCard(),
-                    const SizedBox(height: 32),
-
-                    // Tombol Hapus Obat Ini (Sendirian sesuai instruksi user)
-                    _buildDeleteButton(),
-                    const SizedBox(height: 24),
-                  ],
-                ),
-              ),
-            ),
+            _buildMedicationHeader(),
+            const SizedBox(height: 20),
+            _buildTodayScheduleSection(),
+            const SizedBox(height: 20),
+            _buildInstructionSection(),
+            const SizedBox(height: 20),
+            _buildAlarmSection(),
+            const SizedBox(height: 24),
+            _buildMarkAsTakenButton(),
+            const SizedBox(height: 16),
+            _buildDeleteButton(),
+            const SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
 
-  /// App Bar: Tombol Kembali, Judul "Detail Obat", Icon Trash, Avatar Profil
-  Widget _buildAppBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-      color: Colors.transparent,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              IconButton(
-                onPressed: () => Navigator.of(context).maybePop(),
-                icon: const Icon(
-                  Icons.arrow_back_rounded,
-                  color: Color(0xFF334155),
-                  size: 24,
-                ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-              const SizedBox(width: 14),
-              const Text(
-                'Detail Obat',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
-                ),
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              IconButton(
-                onPressed: _showDeleteConfirmationDialog,
-                icon: const Icon(
-                  Icons.delete_outline_rounded,
-                  color: Color(0xFF64748B),
-                  size: 24,
-                ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-              const SizedBox(width: 14),
-              Container(
-                width: 36,
-                height: 36,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF0288D1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.person,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
-            ],
-          ),
-        ],
+  // ─── App Bar ───────────────────────────────────────────────
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: AppColors.background,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios, color: AppColors.navy, size: 20),
+        onPressed: () => Navigator.pop(context),
       ),
+      title: Text(
+        'Detail Obat - ${widget.medicationName}',
+        style: const TextStyle(
+          fontFamily: 'PlusJakartaSans',
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: AppColors.navy,
+        ),
+      ),
+      centerTitle: true,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.delete_outline, color: AppColors.grey, size: 22),
+          onPressed: _showDeleteConfirmation,
+        ),
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: CircleAvatar(
+            backgroundColor: AppColors.lightBlue,
+            child: const Icon(Icons.person, color: AppColors.primary, size: 20),
+          ),
+        ),
+      ],
     );
   }
 
-  /// Hero Card Header: Icon Obat, Badge "Jadwal Aktif Hari Ini", Nama Obat, Dosis & Bentuk
-  Widget _buildHeroCard() {
+  // ─── Medication Header ─────────────────────────────────────
+  Widget _buildMedicationHeader() {
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.lightBlue.withOpacity(0.5)),
       ),
-      child: Stack(
+      child: Row(
         children: [
-          Positioned(
-            right: -10,
-            top: -10,
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE0F2FE).withOpacity(0.35),
-                shape: BoxShape.circle,
-              ),
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: AppColors.lightBlue,
+              borderRadius: BorderRadius.circular(16),
             ),
+            child: const Icon(Icons.medication, color: AppColors.primary, size: 32),
           ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFE0F2FE),
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.medication_rounded,
-                    color: Color(0xFF0288D1),
-                    size: 28,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE0F2FE),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.check_circle_outline_rounded,
-                            size: 13,
-                            color: Color(0xFF0288D1),
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            'Jadwal Aktif Hari Ini',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF0288D1),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
+                    Icon(Icons.check_circle, color: AppColors.primary, size: 16),
+                    SizedBox(width: 6),
                     Text(
-                      widget.medicationName,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${widget.dosage} • ${widget.form}',
-                      style: const TextStyle(
-                        fontSize: 14,
+                      'Jadwal Aktif Hari Ini',
+                      style: TextStyle(
+                        fontFamily: 'PlusJakartaSans',
+                        fontSize: 12,
+                        color: AppColors.primary,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF0288D1),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                Text(
+                  widget.medicationName,
+                  style: const TextStyle(
+                    fontFamily: 'PlusJakartaSans',
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.navy,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.dosage,
+                  style: const TextStyle(
+                    fontFamily: 'PlusJakartaSans',
+                    fontSize: 14,
+                    color: AppColors.grey,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  /// Bagian Jadwal Minum Hari Ini (3 Kartu: Pagi, Siang, Malam)
-  Widget _buildScheduleSection() {
+  // ─── Today's Schedule ──────────────────────────────────────
+  Widget _buildTodayScheduleSection() {
     return Container(
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.lightBlue.withOpacity(0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Jadwal Minum Hari Ini',
+            style: TextStyle(
+              fontFamily: 'PlusJakartaSans',
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.navy,
+            ),
           ),
+          const SizedBox(height: 16),
+          ..._todaySchedules.map((schedule) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _DoseScheduleItem(schedule: schedule),
+              )),
         ],
       ),
-      padding: const EdgeInsets.all(16),
+    );
+  }
+
+  // ─── Instruction Section ───────────────────────────────────
+  Widget _buildInstructionSection() {
+    final isBeforeMeal = widget.mealInstruction == 'Sebelum Makan';
+    final instructionText = isBeforeMeal
+        ? 'Minum 30 menit sebelum makan untuk penyerapan optimal.'
+        : 'Minum 15-30 menit setelah sarapan atau makan siang untuk menjaga kenyamanan lambung.';
+    final instructionTitle = isBeforeMeal ? 'Sebelum Makan (Perut Kosong)' : 'Sesudah Makan (Perut Terisi)';
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.lightBlue.withOpacity(0.5)),
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildScheduleItemCard(
-            icon: Icons.check,
-            iconBgColor: const Color(0xFFBAE6FD),
-            iconColor: const Color(0xFF0288D1),
-            time: '08.00 WIB',
-            period: '(Pagi)',
-            subtitle: 'Dosis 1 • 1 tablet (500mg)',
-            badgeText: 'Selesai 08.05',
-            badgeBgColor: const Color(0xFFE0F2FE),
-            badgeTextColor: const Color(0xFF0288D1),
-            cardBgColor: const Color(0xFFF8FAFC),
+          const Text(
+            'Petunjuk & Aturan Konsumsi',
+            style: TextStyle(
+              fontFamily: 'PlusJakartaSans',
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.navy,
+            ),
           ),
-          const SizedBox(height: 12),
-          _buildScheduleItemCard(
-            icon: Icons.notifications_active_outlined,
-            iconBgColor: const Color(0xFFBAE6FD),
-            iconColor: const Color(0xFF0288D1),
-            time: '14.00 WIB',
-            period: '(Siang)',
-            subtitle: 'Dosis 2 • 1 tablet\n(500mg)',
-            badgeText: 'Dalam 2 jam',
-            badgeBgColor: const Color(0xFF0288D1),
-            badgeTextColor: Colors.white,
-            badgeIcon: Icons.timer_outlined,
-            cardBgColor: const Color(0xFFF0F9FF),
-            borderColor: const Color(0xFFBAE6FD),
-          ),
-          const SizedBox(height: 12),
-          _buildScheduleItemCard(
-            icon: Icons.nightlight_round,
-            iconBgColor: const Color(0xFFF1F5F9),
-            iconColor: const Color(0xFF64748B),
-            time: '20.00 WIB',
-            period: '(Malam)',
-            subtitle: 'Dosis 3 • 1 tablet (500mg)',
-            badgeText: 'Malam Ini',
-            badgeBgColor: const Color(0xFFF1F5F9),
-            badgeTextColor: const Color(0xFF64748B),
-            cardBgColor: const Color(0xFFF8FAFC),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.lightBlue.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.restaurant, color: AppColors.primary, size: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        instructionTitle,
+                        style: const TextStyle(
+                          fontFamily: 'PlusJakartaSans',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.navy,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        instructionText,
+                        style: const TextStyle(
+                          fontFamily: 'PlusJakartaSans',
+                          fontSize: 12,
+                          color: AppColors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildScheduleItemCard({
-    required IconData icon,
-    required Color iconBgColor,
-    required Color iconColor,
-    required String time,
-    required String period,
-    required String subtitle,
-    required String badgeText,
-    required Color badgeBgColor,
-    required Color badgeTextColor,
-    required Color cardBgColor,
-    Color? borderColor,
-    IconData? badgeIcon,
-  }) {
+  // ─── Alarm Section ─────────────────────────────────────────
+  Widget _buildAlarmSection() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: cardBgColor,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: borderColor ?? const Color(0xFFE2E8F0),
-          width: borderColor != null ? 1.2 : 0.8,
-        ),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.lightBlue.withOpacity(0.5)),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: iconBgColor,
-              shape: BoxShape.circle,
+          const Icon(Icons.alarm, color: AppColors.primary, size: 24),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text(
+              'Alarm Pengingat',
+              style: TextStyle(
+                fontFamily: 'PlusJakartaSans',
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.navy,
+              ),
             ),
-            child: Icon(icon, color: iconColor, size: 20),
           ),
+          Switch(
+            value: _isAlarmEnabled,
+            onChanged: (value) {
+              setState(() {
+                _isAlarmEnabled = value;
+              });
+              // TODO: Update status alarm di database
+              print('Alarm ${value ? 'diaktifkan' : 'dinonaktifkan'}');
+            },
+            activeColor: AppColors.primary,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Mark as Taken Button ──────────────────────────────────
+  Widget _buildMarkAsTakenButton() {
+    // Cari dosis yang statusnya 'ready' (tepat waktu)
+    final readyDose = _todaySchedules.firstWhere(
+      (s) => s.status == DoseStatus.ready,
+      orElse: () => DoseSchedule(
+        id: '',
+        time: '',
+        timeLabel: '',
+        doseLabel: '',
+        doseInfo: '',
+        status: DoseStatus.upcoming,
+      ),
+    );
+
+    // Hanya tampilkan jika ada dosis yang ready
+    if (readyDose.id.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: ElevatedButton.icon(
+        onPressed: () => _handleMarkAsTaken(readyDose),
+        icon: const Icon(Icons.check_circle_outline, size: 20),
+        label: Text(
+          'Tandai Dosis ${readyDose.timeLabel} Sudah Diminum',
+          style: const TextStyle(
+            fontFamily: 'PlusJakartaSans',
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 0,
+        ),
+      ),
+    );
+  }
+
+  // ─── Delete Button ─────────────────────────────────────────
+  Widget _buildDeleteButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: _showDeleteConfirmation,
+        icon: const Icon(Icons.delete_outline, color: const Color(0xFFE53935), size: 20),
+        label: const Text(
+          'Hapus Obat Ini',
+          style: TextStyle(
+            fontFamily: 'PlusJakartaSans',
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFFE53935),
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          side: const BorderSide(color: Color(0xFFE53935)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+      ),
+    );
+  }
+
+  void _handleMarkAsTaken(DoseSchedule dose) {
+    setState(() {
+      final index = _todaySchedules.indexWhere((s) => s.id == dose.id);
+      if (index != -1) {
+        _todaySchedules[index] = _todaySchedules[index].copyWith(
+          status: DoseStatus.taken,
+          takenTime: DateTime.now().hour.toString().padLeft(2, '0') + '.' + 
+                    DateTime.now().minute.toString().padLeft(2, '0'),
+        );
+      }
+    });
+    // TODO: Simpan ke database
+    print('Dosis ${dose.doseLabel} ditandai sudah diminum');
+  }
+
+  void _showDeleteConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Hapus Obat?',
+          style: TextStyle(
+            fontFamily: 'PlusJakartaSans',
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: AppColors.navy,
+          ),
+        ),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus ${widget.medicationName}? Semua jadwal pengingat akan dihapus.',
+          style: const TextStyle(
+            fontFamily: 'PlusJakartaSans',
+            fontSize: 14,
+            color: AppColors.grey,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Batal',
+              style: TextStyle(
+                fontFamily: 'PlusJakartaSans',
+                color: AppColors.grey,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _handleDeleteMedication();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE53935),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text(
+              'Hapus',
+              style: TextStyle(
+                fontFamily: 'PlusJakartaSans',
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleDeleteMedication() {
+    // TODO: Hapus dari database
+    print('Obat ${widget.medicationName} dihapus');
+    Navigator.pop(context); // Kembali ke halaman sebelumnya
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DATA MODELS
+// ═══════════════════════════════════════════════════════════════
+
+enum DoseStatus { taken, upcoming, ready }
+
+class DoseSchedule {
+  final String id;
+  final String time;
+  final String timeLabel;
+  final String doseLabel;
+  final String doseInfo;
+  final DoseStatus status;
+  final String? takenTime;
+  final int? hoursRemaining;
+  final bool isTonight;
+
+  const DoseSchedule({
+    required this.id,
+    required this.time,
+    required this.timeLabel,
+    required this.doseLabel,
+    required this.doseInfo,
+    required this.status,
+    this.takenTime,
+    this.hoursRemaining,
+    this.isTonight = false,
+  });
+
+  DoseSchedule copyWith({
+    String? id,
+    String? time,
+    String? timeLabel,
+    String? doseLabel,
+    String? doseInfo,
+    DoseStatus? status,
+    String? takenTime,
+    int? hoursRemaining,
+    bool? isTonight,
+  }) {
+    return DoseSchedule(
+      id: id ?? this.id,
+      time: time ?? this.time,
+      timeLabel: timeLabel ?? this.timeLabel,
+      doseLabel: doseLabel ?? this.doseLabel,
+      doseInfo: doseInfo ?? this.doseInfo,
+      status: status ?? this.status,
+      takenTime: takenTime ?? this.takenTime,
+      hoursRemaining: hoursRemaining ?? this.hoursRemaining,
+      isTonight: isTonight ?? this.isTonight,
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELPER WIDGETS
+// ═══════════════════════════════════════════════════════════════
+
+class _DoseScheduleItem extends StatelessWidget {
+  final DoseSchedule schedule;
+
+  const _DoseScheduleItem({required this.schedule});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.lightBlue.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          _buildStatusIcon(),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -438,258 +554,131 @@ class _DetailMedicationScreenState extends State<DetailMedicationScreen> {
                 Row(
                   children: [
                     Text(
-                      time,
+                      '${schedule.time} WIB',
                       style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
+                        fontFamily: 'PlusJakartaSans',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.navy,
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      period,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
+                    if (schedule.timeLabel.isNotEmpty) ...[
+                      const SizedBox(width: 4),
+                      Text(
+                        '(${schedule.timeLabel})',
+                        style: const TextStyle(
+                          fontFamily: 'PlusJakartaSans',
+                          fontSize: 12,
+                          color: AppColors.grey,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
-                  subtitle,
+                  '${schedule.doseLabel} • ${schedule.doseInfo}',
                   style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF64748B),
-                    height: 1.2,
+                    fontFamily: 'PlusJakartaSans',
+                    fontSize: 12,
+                    color: AppColors.grey,
                   ),
                 ),
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: badgeBgColor,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (badgeIcon != null) ...[
-                  Icon(badgeIcon, size: 12, color: badgeTextColor),
-                  const SizedBox(width: 4),
-                ],
-                Text(
-                  badgeText,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: badgeTextColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          const SizedBox(width: 12),
+          _buildStatusBadge(),
         ],
       ),
     );
   }
 
-  /// Bagian Petunjuk & Aturan Konsumsi (Sesudah Makan)
-  Widget _buildInstructionCard() {
+  Widget _buildStatusIcon() {
+    IconData icon;
+    Color color;
+    Color bgColor;
+
+    switch (schedule.status) {
+      case DoseStatus.taken:
+        icon = Icons.check;
+        color = Colors.white;
+        bgColor = AppColors.primary;
+        break;
+      case DoseStatus.ready:
+        icon = Icons.alarm;
+        color = AppColors.primary;
+        bgColor = Colors.white;
+        break;
+      case DoseStatus.upcoming:
+      default:
+        icon = schedule.isTonight ? Icons.nightlight_round : Icons.alarm;
+        color = AppColors.grey;
+        bgColor = Colors.white;
+        break;
+    }
+
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      width: 40,
+      height: 40,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        color: bgColor,
+        shape: BoxShape.circle,
+        border: schedule.status != DoseStatus.taken
+            ? Border.all(color: AppColors.lightBlue)
+            : null,
       ),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFE2E8F0), width: 0.8),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: const BoxDecoration(
-                color: Color(0xFFE0F2FE),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.restaurant_rounded,
-                color: Color(0xFF0288D1),
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 14),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Sesudah Makan (Perut Terisi)',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B),
-                    ),
-                  ),
-                  SizedBox(height: 6),
-                  Text(
-                    'Minum 15–30 menit setelah sarapan atau makan siang untuk menjaga kenyamanan lambung.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF64748B),
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+      child: Icon(icon, color: color, size: 20),
     );
   }
 
-  /// Bagian Alarm Pengingat & Sisa Stok
-  Widget _buildAlarmAndStockCard() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+  Widget _buildStatusBadge() {
+    switch (schedule.status) {
+      case DoseStatus.taken:
+        return Text(
+          'Selesai ${schedule.takenTime}',
+          style: const TextStyle(
+            fontFamily: 'PlusJakartaSans',
+            fontSize: 12,
+            color: AppColors.primary,
+            fontWeight: FontWeight.w600,
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF0F9FF),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.alarm_rounded,
-                      color: Color(0xFF0288D1),
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'Alarm Pengingat',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B),
-                    ),
-                  ),
-                ],
-              ),
-              Switch(
-                value: _isAlarmActive,
-                onChanged: (val) {
-                  setState(() => _isAlarmActive = val);
-                },
-                activeColor: Colors.white,
-                activeTrackColor: const Color(0xFF0288D1),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          const Divider(color: Color(0xFFF1F5F9), height: 1),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              InkWell(
-                onTap: () {},
-                child: const Row(
-                  children: [
-                    Icon(
-                      Icons.edit_calendar_outlined,
-                      color: Color(0xFF0288D1),
-                      size: 16,
-                    ),
-                    SizedBox(width: 6),
-                    Text(
-                      'Ubah Jadwal & Waktu Alarm',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF0288D1),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Text(
-                'Sisa 12 Tablet',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF64748B),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Tombol Hapus Obat Ini (Sendirian tanpa tombol tandai dosis sesuai permintaan)
-  Widget _buildDeleteButton() {
-    return Center(
-      child: TextButton.icon(
-        onPressed: _showDeleteConfirmationDialog,
-        icon: const Icon(
-          Icons.delete_outline_rounded,
-          color: Color(0xFFDC2626),
-          size: 20,
-        ),
-        label: const Text(
-          'Hapus Obat Ini',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFFDC2626),
-          ),
-        ),
-        style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          shape: RoundedRectangleBorder(
+        );
+      case DoseStatus.ready:
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppColors.primary,
             borderRadius: BorderRadius.circular(16),
           ),
-        ),
-      ),
-    );
+          child: Text(
+            'Dalam ${schedule.hoursRemaining} Jam',
+            style: const TextStyle(
+              fontFamily: 'PlusJakartaSans',
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        );
+      case DoseStatus.upcoming:
+      default:
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.grey.withOpacity(0.3)),
+          ),
+          child: Text(
+            schedule.isTonight ? 'Malam Ini' : 'Belum',
+            style: const TextStyle(
+              fontFamily: 'PlusJakartaSans',
+              fontSize: 12,
+              color: AppColors.grey,
+            ),
+          ),
+        );
+    }
   }
 }
