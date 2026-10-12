@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../config/app_constant.dart';
 import '../widgets/profile_section.dart';
 import '../widgets/profile_menu_tile.dart';
@@ -96,6 +97,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ],
     );
   }
+
   //profile card
   Widget _buildProfileCard() {
     return Container(
@@ -115,7 +117,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Text(
                   _getInitials(_userName),
                   style: const TextStyle(
-                    
                     color: AppColors.primary,
                     fontWeight: FontWeight.w700,
                     fontSize: 20,
@@ -134,10 +135,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     decoration: BoxDecoration(
                       color: AppColors.primary,
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppColors.white,
-                        width: 2,
-                      ),
+                      border: Border.all(color: AppColors.white, width: 2),
                     ),
                     child: const Icon(
                       Icons.edit,
@@ -155,7 +153,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Text(
             _userName,
             style: const TextStyle(
-              
               fontWeight: FontWeight.w700,
               fontSize: 16,
               color: AppColors.navy,
@@ -167,7 +164,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Text(
             _userEmail,
             style: const TextStyle(
-              
               fontWeight: FontWeight.w400,
               fontSize: 12,
               color: AppColors.grey,
@@ -177,6 +173,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+
   //reminder section
   Widget _buildReminderSection() {
     return ProfileSection(
@@ -219,7 +216,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
   //histori section
-  
+
   Widget _buildHistorySection() {
     return ProfileSection(
       title: "Riwayat Terpadu",
@@ -228,9 +225,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       onActionTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => const HistoryScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const HistoryScreen()),
         );
       },
       child: Column(
@@ -252,23 +247,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       child: Row(
         children: [
-          _buildTabItem(
-            title: "Riwayat Obat",
-            index: 0,
-          ),
-          _buildTabItem(
-            title: "Riwayat Makan",
-            index: 1,
-          ),
+          _buildTabItem(title: "Riwayat Obat", index: 0),
+          _buildTabItem(title: "Riwayat Makan", index: 1),
         ],
       ),
     );
   }
 
-  Widget _buildTabItem({
-    required String title,
-    required int index,
-  }) {
+  Widget _buildTabItem({required String title, required int index}) {
     final bool isSelected = _selectedHistoryTab == index;
     return Expanded(
       child: GestureDetector(
@@ -280,9 +266,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected
-                ? AppColors.white
-                : Colors.transparent,
+            color: isSelected ? AppColors.white : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             boxShadow: isSelected
                 ? [
@@ -297,14 +281,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Center(
             child: Text(
               title,
-              style: TextStyle(    
-                color: isSelected
-                    ? AppColors.primary
-                    : AppColors.grey,
+              style: TextStyle(
+                color: isSelected ? AppColors.primary : AppColors.grey,
                 fontSize: 12,
-                fontWeight: isSelected
-                    ? FontWeight.w600
-                    : FontWeight.w400,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
               ),
             ),
           ),
@@ -312,6 +292,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+
   //histori item
   List<Widget> _getHistoryItems() {
     if (_selectedHistoryTab == 0) {
@@ -355,6 +336,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ];
     }
   }
+
   //help section
   Widget _buildHelpSection() {
     return ProfileSection(
@@ -378,6 +360,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+
   //logout button
   Widget _buildLogoutButton() {
     return SizedBox(
@@ -403,7 +386,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title: const Text(
                 "Keluar Akun",
                 style: TextStyle(
-                  
                   fontWeight: FontWeight.w700,
                   color: AppColors.navy,
                 ),
@@ -411,7 +393,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               content: const Text(
                 "Apakah Anda yakin ingin keluar dari aplikasi?",
                 style: TextStyle(
-                  
                   fontWeight: FontWeight.w400,
                   color: AppColors.grey,
                 ),
@@ -422,7 +403,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: const Text(
                     "Batal",
                     style: TextStyle(
-                      
                       fontWeight: FontWeight.w500,
                       color: AppColors.grey,
                     ),
@@ -441,30 +421,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   },
                   child: const Text(
                     "Keluar",
-                    style: TextStyle(
-                      
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
             ),
           );
         },
-        icon: const Icon(
-          Icons.logout,
-          size: 16,
-        ),
+        icon: const Icon(Icons.logout, size: 16),
         label: const Text(
           "Keluar Akun",
-          style: TextStyle(
-            
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
     );
   }
+
   //footer
   Widget _buildFooter() {
     return const Center(
@@ -481,7 +453,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           SizedBox(height: 2),
           Text(
             "Waktunya Dijaga, Sehatnya Dijaga",
-            style: TextStyle(              
+            style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w400,
               color: AppColors.grey,
@@ -491,10 +463,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+
   //bottom navigation
   Widget _buildBottomNav() {
     return BottomNavigationBar(
       currentIndex: 1,
+
+      onTap: (index) {
+        if (index == 0) {
+          Navigator.pop(context);
+        }
+      },
+
       backgroundColor: AppColors.white,
       selectedItemColor: AppColors.primary,
       unselectedItemColor: AppColors.grey,
@@ -503,7 +483,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         fontWeight: FontWeight.w600,
         fontSize: 12,
       ),
-      unselectedLabelStyle: const TextStyle(        
+      unselectedLabelStyle: const TextStyle(
         fontWeight: FontWeight.w400,
         fontSize: 12,
       ),
@@ -521,6 +501,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ],
     );
   }
+
   //logic helpers
   String _getInitials(String name) {
     final parts = name.trim().split(RegExp(r'\s+'));
@@ -528,39 +509,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return '?';
     }
     if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'
-          .toUpperCase();
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
     return parts[0][0].toUpperCase();
   }
+
   //edit profil
   void _showEditProfileDialog() {
-    final nameController = TextEditingController(
-      text: _userName,
-    );
-    final emailController = TextEditingController(
-      text: _userEmail,
-    );
+    final nameController = TextEditingController(text: _userName);
+    final emailController = TextEditingController(text: _userEmail);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
           'Edit Profil',
-          style: TextStyle(            
-            fontWeight: FontWeight.w700,
-            color: AppColors.navy,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.navy),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
-              style: const TextStyle(                
+              style: const TextStyle(
                 fontWeight: FontWeight.w400,
                 color: AppColors.navy,
               ),
@@ -573,7 +545,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 12),
             TextField(
               controller: emailController,
-              style: const TextStyle(             
+              style: const TextStyle(
                 fontWeight: FontWeight.w400,
                 color: AppColors.navy,
               ),
@@ -592,7 +564,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: const Text(
               'Batal',
               style: TextStyle(
-                
                 fontWeight: FontWeight.w500,
                 color: AppColors.grey,
               ),
@@ -621,10 +592,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
             child: const Text(
               'Simpan',
-              style: TextStyle(
-                
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         ],
