@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../config/app_constant.dart';
+
 
 class ProfileSection extends StatelessWidget {
   final String title;
   final String? actionText;
-  final VoidCallback? onActionTap; // <-- TAMBAHAN: Agar bisa diklik
+  final VoidCallback? onActionTap;
+  final IconData? icon;
   final Widget child;
 
   const ProfileSection({
@@ -11,6 +14,7 @@ class ProfileSection extends StatelessWidget {
     required this.title,
     this.actionText,
     this.onActionTap,
+    this.icon,
     required this.child,
   });
 
@@ -19,32 +23,57 @@ class ProfileSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: Color(0xFF1E293B), // Sesuai desain
+              // Ikon dan judul
+              Expanded(
+                child: Row(
+                  children: [
+                    if (icon != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: const BoxDecoration(
+                          color: AppColors.lightBlue,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          icon,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                    ],
+                    Flexible(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.navy,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
+
+              // Tombol Lihat Semua
               if (actionText != null)
-                GestureDetector( // <-- TAMBAHAN: Agar bisa diklik
-                  onTap: onActionTap,
+                TextButton(
+                  onPressed: onActionTap,
                   child: Text(
                     actionText!,
                     style: const TextStyle(
-                      color: Color(0xff008ACB),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
                     ),
                   ),
                 ),
@@ -56,4 +85,5 @@ class ProfileSection extends StatelessWidget {
       ),
     );
   }
+
 }

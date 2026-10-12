@@ -1,352 +1,288 @@
 import 'package:flutter/material.dart';
+import '../../config/app_constant.dart';
 
-/// Screen Riwayat Makan (Meal History Screen) - SAJAGA App
-/// Lokasi file: lib/views/history/meal_history_screen.dart
-class MealHistoryScreen extends StatefulWidget {
+class MealHistoryScreen extends StatelessWidget {
   const MealHistoryScreen({super.key});
 
   @override
-  State<MealHistoryScreen> createState() => _MealHistoryScreenState();
-}
-
-class _MealHistoryScreenState extends State<MealHistoryScreen> {
-  // Default ke tab Makanan (index 1) karena ini halaman khusus makanan
-  int _selectedTabIndex = 1; 
-
-  // Data Model untuk Riwayat Makan Hari Ini
-  final List<MealHistoryEntry> _todayMeals = const [
-    MealHistoryEntry(
-      name: 'Sarapan Pagi',
-      time: '07.15 WIB',
-      note: 'Tepat Waktu',
-      status: 'Selesai',
-      iconType: MealIconType.pagi,
-    ),
-    MealHistoryEntry(
-      name: 'Makan Siang',
-      time: '12.30 WIB',
-      note: 'Tepat Waktu',
-      status: 'Selesai',
-      iconType: MealIconType.siang,
-    ),
-    MealHistoryEntry(
-      name: 'Makan Malam',
-      time: '19.10 WIB',
-      note: 'Tepat Waktu',
-      status: 'Selesai',
-      iconType: MealIconType.malam,
-    ),
-  ];
-
-  // Data Model untuk Riwayat Makan Kemarin
-  final List<MealHistoryEntry> _yesterdayMeals = const [
-    MealHistoryEntry(
-      name: 'Sarapan Pagi',
-      time: '07.20 WIB',
-      note: 'Tepat Waktu',
-      status: 'Selesai',
-      iconType: MealIconType.pagi,
-    ),
-    MealHistoryEntry(
-      name: 'Makan Siang',
-      time: '12.45 WIB',
-      note: 'Tepat Waktu',
-      status: 'Selesai',
-      iconType: MealIconType.siang,
-    ),
-    MealHistoryEntry(
-      name: 'Makan Malam',
-      time: '19.15 WIB',
-      note: 'Tepat Waktu',
-      status: 'Selesai',
-      iconType: MealIconType.malam,
-    ),
-  ];
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F9FD), // Sama dengan temanmu agar konsisten
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildAppBar(),
-            _buildSegmentedTab(),
-            const SizedBox(height: 16),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 4.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Tampilkan konten berdasarkan tab yang dipilih
-                    if (_selectedTabIndex == 1) ...[
-                      _buildDateSectionHeader(
-                        dotColor: const Color(0xFF0288D1),
-                        dayLabel: 'Hari Ini',
-                        dateLabel: 'Rabu, 24 Mei',
-                      ),
-                      const SizedBox(height: 10),
-                      ..._todayMeals.map(
-                        (item) => Padding(
-                          padding: const EdgeInsets.only(bottom: 10.0),
-                          child: _buildHistoryCard(item),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildDateSectionHeader(
-                        dotColor: const Color(0xFF94A3B8),
-                        dayLabel: 'Kemarin',
-                        dateLabel: 'Selasa, 23 Mei',
-                      ),
-                      const SizedBox(height: 10),
-                      ..._yesterdayMeals.map(
-                        (item) => Padding(
-                          padding: const EdgeInsets.only(bottom: 10.0),
-                          child: _buildHistoryCard(item),
-                        ),
-                      ),
-                    ] else ...[
-                      // Placeholder untuk tab Obat (karena ini tugas temanmu)
-                      _buildObatPlaceholder(),
-                    ],
-                    const SizedBox(height: 20),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ============ WIDGET-WIDGET PEMBANTU (Sama persis strukturnya dengan punya temanmu) ============
-
-  Widget _buildAppBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.of(context).maybePop(),
-            icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF1E293B), size: 24),
-          ),
-          const SizedBox(width: 8),
-          const Text(
-            'Riwayat Aktivitas',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSegmentedTab() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: Container(
-        height: 46,
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: const Color(0xFFE2E8F0).withOpacity(0.6),
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: InkWell(
-                onTap: () => setState(() => _selectedTabIndex = 0),
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: _selectedTabIndex == 0 ? const Color(0xFF0288D1) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  alignment: Alignment.center,
-                  child: const Text(
-                    'Obat',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white, // Simplified for readability
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Expanded(
-              child: InkWell(
-                onTap: () => setState(() => _selectedTabIndex = 1),
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: _selectedTabIndex == 1 ? const Color(0xFF0288D1) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  alignment: Alignment.center,
-                  child: const Text(
-                    'Makanan',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDateSectionHeader({
-    required Color dotColor,
-    required String dayLabel,
-    required String dateLabel,
-  }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
       children: [
-        Row(
-          children: [
-            CircleAvatar(radius: 3, backgroundColor: dotColor),
-            const SizedBox(width: 8),
-            Text(
-              dayLabel, 
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))
-            ),
-          ],
+        _buildSummaryCard(),
+        const SizedBox(height: 20),
+
+        _buildDateHeader(
+          'Hari Ini',
+          'Rabu, 24 Mei',
+          AppColors.primary,
         ),
-        Text(
-          dateLabel, 
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF64748B))
+        const SizedBox(height: 12),
+
+        _buildMealCard(
+          title: 'Sarapan Pagi',
+          time: '07.15 WIB',
+          icon: Icons.breakfast_dining_outlined,
+        ),
+        _buildMealCard(
+          title: 'Makan Siang',
+          time: '12.30 WIB',
+          icon: Icons.wb_sunny_outlined,
+        ),
+        _buildMealCard(
+          title: 'Makan Malam',
+          time: '19.10 WIB',
+          icon: Icons.nightlight_outlined,
+        ),
+
+        const SizedBox(height: 20),
+
+        _buildDateHeader(
+          'Kemarin',
+          'Selasa, 23 Mei',
+          AppColors.grey,
+        ),
+        const SizedBox(height: 12),
+
+        _buildMealCard(
+          title: 'Sarapan Pagi',
+          time: '07.20 WIB',
+          icon: Icons.breakfast_dining_outlined,
+        ),
+        _buildMealCard(
+          title: 'Makan Siang',
+          time: '12.45 WIB',
+          icon: Icons.wb_sunny_outlined,
+        ),
+        _buildMealCard(
+          title: 'Makan Malam',
+          time: '19.15 WIB',
+          icon: Icons.nightlight_outlined,
         ),
       ],
     );
   }
 
-  Widget _buildHistoryCard(MealHistoryEntry item) {
-    // Tentukan icon berdasarkan jenis waktu makan
-    IconData icon = (item.iconType == MealIconType.pagi || item.iconType == MealIconType.siang)
-        ? Icons.wb_sunny_rounded
-        : Icons.nightlight_round;
-
+  // Ringkasan pola makan
+  Widget _buildSummaryCard() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.025), blurRadius: 8, offset: const Offset(0, 2)),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: const BoxDecoration(color: Color(0xFFF0F9FF), shape: BoxShape.circle),
-                child: Icon(icon, color: const Color(0xFF0288D1), size: 20),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.name, 
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))
-                  ),
-                  const SizedBox(height: 3),
-                  Row(
-                    children: [
-                      const Icon(Icons.access_time_rounded, size: 13, color: Color(0xFF64748B)),
-                      const SizedBox(width: 4),
-                      Text(
-                        item.time, 
-                        style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500)
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '• ${item.note}', 
-                        style: const TextStyle(fontSize: 11, color: Color(0xFF0288D1), fontWeight: FontWeight.w500)
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE6F9F0), 
-              borderRadius: BorderRadius.circular(16)
-            ),
-            child: Text(
-              item.status, 
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF10B981))
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Placeholder khusus agar tidak bentrok dengan tugas teman
-  Widget _buildObatPlaceholder() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 60),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0288D1).withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.medical_services_rounded, color: Color(0xFF0288D1), size: 40),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Riwayat Obat',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Data riwayat obat dikelola di modul terpisah.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-            ),
+        gradient: const LinearGradient(
+          colors: [
+            AppColors.white,
+            AppColors.lightBlue,
           ],
         ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.lightBlue,
+        ),
+      ),
+      child: Row(
+        children: [
+          _buildIcon(
+            Icons.restaurant,
+            size: 22,
+          ),
+          const SizedBox(width: 12),
+
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        '100% Pola Makan Teratur',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.navy,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 4),
+                    Icon(
+                      Icons.circle,
+                      size: 7,
+                      color: Color(0xFF10B981),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 4),
+                Text(
+                  '3 dari 3 jadwal makan hari ini selesai tepat waktu',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 9,
+              vertical: 6,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.lightBlue,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Text(
+              'Optimal',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
-}
 
-// ============ DATA MODEL (Sama konsepnya dengan temanmu) ============
+  // Judul kelompok tanggal
+  Widget _buildDateHeader(
+    String title,
+    String date,
+    Color dotColor,
+  ) {
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 4,
+          backgroundColor: dotColor,
+        ),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: AppColors.navy,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          date,
+          style: const TextStyle(
+            fontSize: 11,
+            color: AppColors.grey,
+          ),
+        ),
+      ],
+    );
+  }
 
-enum MealIconType { pagi, siang, malam }
+  // Kartu riwayat makan
+  Widget _buildMealCard({
+    required String title,
+    required String time,
+    required IconData icon,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.lightBlue,
+        ),
+      ),
+      child: Row(
+        children: [
+          _buildIcon(icon),
+          const SizedBox(width: 12),
 
-class MealHistoryEntry {
-  final String name;
-  final String time;
-  final String note;
-  final String status;
-  final MealIconType iconType;
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.navy,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.access_time,
+                      size: 12,
+                      color: AppColors.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        '$time • Tepat Waktu',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
 
-  const MealHistoryEntry({
-    required this.name,
-    required this.time,
-    required this.note,
-    required this.status,
-    required this.iconType,
-  });
+          const SizedBox(width: 8),
+
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 9,
+              vertical: 6,
+            ),
+            decoration: BoxDecoration(
+              color: const Color(0xFFECFDF5),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: const Color(0xFFD1FAE5),
+              ),
+            ),
+            child: const Text(
+              'Selesai',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF059669),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Ikon dengan lingkaran biru muda
+  Widget _buildIcon(
+    IconData icon, {
+    double size = 20,
+  }) {
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: const BoxDecoration(
+        color: AppColors.lightBlue,
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        icon,
+        size: size,
+        color: AppColors.primary,
+      ),
+    );
+  }
 }
