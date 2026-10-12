@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../config/app_constant.dart';
 
 class HistoryItemCard extends StatelessWidget {
   final IconData icon;
@@ -26,7 +27,7 @@ class HistoryItemCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xffF5FAFE),
+        color: AppColors.background,
         borderRadius: BorderRadius.circular(12), // Sedikit diperkecil agar lebih proporsional
       ),
       child: Row(
@@ -35,13 +36,13 @@ class HistoryItemCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xff008ACB).withOpacity(0.1),
+              color: AppColors.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               icon,
               size: 18,
-              color: const Color(0xff008ACB),
+              color: AppColors.primary,
             ),
           ),
           const SizedBox(width: 12),
@@ -54,7 +55,7 @@ class HistoryItemCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B),
+                    color: AppColors.navy,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -62,7 +63,7 @@ class HistoryItemCard extends StatelessWidget {
                   subtitle,
                   style: const TextStyle(
                     fontSize: 11,
-                    color: Color(0xFF64748B),
+                    color: AppColors.grey,
                   ),
                 ),
               ],
