@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../config/app_constant.dart';
+import '../../routes/app_routes.dart';
 
 const Color _pageBackground = Color(0xFFF4FAFD);
 
@@ -237,7 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
         selectedIndex: 0,
         onItemTap: (index) {
           if (index == 1) {
-            _showPrototypeMessage('Halaman Profil belum terhubung.');
+            Navigator.pushNamed(context, AppRoutes.profile);
           }
         },
       ),
