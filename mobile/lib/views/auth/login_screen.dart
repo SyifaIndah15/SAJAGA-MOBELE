@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
+=======
+
+>>>>>>> 78590bf460589008138e9989aa42c9b04566bedb
 import '../../config/app_constant.dart';
 import '../../utils/validator.dart';
 import 'forgot_password_screen.dart';
 import 'register_screen.dart';
+<<<<<<< HEAD
+=======
+import '../../routes/app_routes.dart';
+>>>>>>> 78590bf460589008138e9989aa42c9b04566bedb
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -17,6 +25,10 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
 
   bool _obscurePassword = true;
+<<<<<<< HEAD
+=======
+  String? _errorMessage;
+>>>>>>> 78590bf460589008138e9989aa42c9b04566bedb
 
   @override
   void dispose() {
@@ -60,9 +72,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   Text(
                     'Kelola jadwal konsumsi obat harian Anda',
                     textAlign: TextAlign.center,
+<<<<<<< HEAD
                     style: textTheme.bodySmall?.copyWith(
                       color: AppColors.grey,
                     ),
+=======
+                    style: textTheme.bodySmall?.copyWith(color: AppColors.grey),
+>>>>>>> 78590bf460589008138e9989aa42c9b04566bedb
                   ),
                   const SizedBox(height: 32),
 
@@ -98,6 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
+<<<<<<< HEAD
                     decoration: _inputDecoration(
                       hintText: 'Masukkan kata sandi',
                       prefixIcon: Icons.lock_outline,
@@ -123,6 +140,42 @@ class _LoginScreenState extends State<LoginScreen> {
                     validator: Validator.validatePassword,
                   ),
 
+=======
+                    decoration:
+                        _inputDecoration(
+                          hintText: 'Masukkan kata sandi',
+                          prefixIcon: Icons.lock_outline,
+                        ).copyWith(
+                          suffixIcon: IconButton(
+                            tooltip: _obscurePassword
+                                ? 'Tampilkan kata sandi'
+                                : 'Sembunyikan kata sandi',
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              color: AppColors.grey,
+                              size: 20,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
+                        ),
+                    validator: Validator.validatePassword,
+                  ),
+                  if (_errorMessage != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        _errorMessage!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.red, fontSize: 13),
+                      ),
+                    ),
+>>>>>>> 78590bf460589008138e9989aa42c9b04566bedb
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
@@ -134,6 +187,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         );
                       },
+<<<<<<< HEAD
+=======
+
+>>>>>>> 78590bf460589008138e9989aa42c9b04566bedb
                       child: Text(
                         'Lupa Kata Sandi?',
                         style: textTheme.labelMedium?.copyWith(
@@ -147,8 +204,33 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   ElevatedButton(
                     onPressed: () {
+<<<<<<< HEAD
                       if (_formKey.currentState!.validate()) {
                         // TODO: Hubungkan ke proses login Supabase.
+=======
+                      print("TOMBOL LOGIN DITEKAN");
+                      if (!_formKey.currentState!.validate()) {
+                        print("VALIDASI GAGAL");
+                        return;
+                      }
+                      print("VALIDASI BERHASIL");
+                      final email = _emailController.text.trim();
+                      final password = _passwordController.text.trim();
+                      print(email);
+                      print(password);
+                      if (email == "test@sajaga.com" &&
+                          password == "12345678") {
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          AppRoutes.home,
+                          (route) => false,
+                        );
+                      } else {
+                        print("LOGIN GAGAL");
+                        setState(() {
+                          _errorMessage = "Email atau kata sandi tidak sesuai";
+                        });
+>>>>>>> 78590bf460589008138e9989aa42c9b04566bedb
                       }
                     },
                     style: ElevatedButton.styleFrom(
@@ -219,6 +301,7 @@ class _LoginScreenState extends State<LoginScreen> {
         color: AppColors.grey.withValues(alpha: 0.8),
         fontSize: 13,
       ),
+<<<<<<< HEAD
       prefixIcon: Icon(
         prefixIcon,
         size: 20,
@@ -230,6 +313,12 @@ class _LoginScreenState extends State<LoginScreen> {
         horizontal: 16,
         vertical: 14,
       ),
+=======
+      prefixIcon: Icon(prefixIcon, size: 20, color: AppColors.grey),
+      filled: true,
+      fillColor: AppColors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+>>>>>>> 78590bf460589008138e9989aa42c9b04566bedb
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: AppColors.lightBlue),
@@ -240,10 +329,14 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
+<<<<<<< HEAD
         borderSide: const BorderSide(
           color: AppColors.primary,
           width: 1.5,
         ),
+=======
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+>>>>>>> 78590bf460589008138e9989aa42c9b04566bedb
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -251,6 +344,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
+<<<<<<< HEAD
         borderSide: const BorderSide(
           color: Colors.red,
           width: 1.5,
@@ -259,3 +353,10 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+=======
+        borderSide: const BorderSide(color: Colors.red, width: 1.5),
+      ),
+    );
+  }
+}
+>>>>>>> 78590bf460589008138e9989aa42c9b04566bedb
