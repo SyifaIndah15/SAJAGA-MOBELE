@@ -550,9 +550,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final nameController = TextEditingController(
       text: _userName,
     );
-    final emailController = TextEditingController(
-      text: _userEmail,
-    );
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -562,7 +559,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         title: const Text(
           'Edit Profil',
-          style: TextStyle(            
+          style: TextStyle(
             fontWeight: FontWeight.w700,
             color: AppColors.navy,
           ),
@@ -572,7 +569,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             TextField(
               controller: nameController,
-              style: const TextStyle(                
+              style: const TextStyle(
                 fontWeight: FontWeight.w400,
                 color: AppColors.navy,
               ),
@@ -581,36 +578,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
-
-            const SizedBox(height: 12),
-            TextField(
-              controller: emailController,
-              style: const TextStyle(             
-                fontWeight: FontWeight.w400,
-                color: AppColors.navy,
-              ),
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.emailAddress,
-            ),
           ],
         ),
-
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text(
               'Batal',
               style: TextStyle(
-                
                 fontWeight: FontWeight.w500,
                 color: AppColors.grey,
               ),
             ),
           ),
-
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
@@ -624,17 +604,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (nameController.text.trim().isNotEmpty) {
                   _userName = nameController.text.trim();
                 }
-
-                if (emailController.text.trim().isNotEmpty) {
-                  _userEmail = emailController.text.trim();
-                }
               });
               Navigator.pop(context);
             },
             child: const Text(
               'Simpan',
               style: TextStyle(
-                
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -643,7 +618,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     ).whenComplete(() {
       nameController.dispose();
-      emailController.dispose();
     });
   }
 }
