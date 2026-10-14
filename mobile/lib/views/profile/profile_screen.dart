@@ -71,26 +71,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
   //header
   Widget _buildHeader() {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
+        // Logo Bulat Biru dengan Icon Tas Medis Putih
         Container(
-          padding: const EdgeInsets.all(6),
+          padding: const EdgeInsets.all(8), // Diperbesar sedikit agar lebih proporsional
           decoration: const BoxDecoration(
             color: AppColors.primary,
             shape: BoxShape.circle,
+            boxShadow: [ // Tambahan shadow halus agar tidak terlihat "basic/flat"
+              BoxShadow(
+                color: AppColors.primary,
+                blurRadius: 8,
+                offset: Offset(0, 4),
+              ),
+            ],
           ),
           child: const Icon(
             Icons.medical_services,
             color: AppColors.white,
-            size: 16,
+            size: 20, // Icon diperbesar sedikit
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 10),
+        // Tulisan SAJAGA sebagai Brand Logo
         const Text(
           "SAJAGA",
           style: TextStyle(
-            fontWeight: FontWeight.w700,
+            fontFamily: 'PlusJakartaSans', // Memastikan font sesuai config
+            fontWeight: FontWeight.w800, // Extra Bold agar terlihat seperti Logo
             color: AppColors.primary,
-            fontSize: 16,
+            fontSize: 20, // Sedikit lebih besar
+            letterSpacing: 0.5,
           ),
         ),
       ],
