@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../config/app_constant.dart';
 import '../../utils/validator.dart';
+import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -83,10 +84,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
                       hintText: 'nama@email.com',
-                      prefixIcon: const Icon(
-                        Icons.email_outlined,
-                        size: 20,
-                      ),
+                      prefixIcon: const Icon(Icons.email_outlined, size: 20),
                       filled: true,
                       fillColor: AppColors.white,
                       contentPadding: const EdgeInsets.symmetric(
@@ -141,10 +139,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
                       hintText: 'Minimal 8 karakter',
-                      prefixIcon: const Icon(
-                        Icons.lock_outline,
-                        size: 20,
-                      ),
+                      prefixIcon: const Icon(Icons.lock_outline, size: 20),
                       suffixIcon: IconButton(
                         tooltip: _obscurePassword
                             ? 'Tampilkan kata sandi'
@@ -202,8 +197,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ElevatedButton(
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
-                        // Integrasi registrasi akan ditambahkan
-                        // setelah disesuaikan dengan auth_service.dart.
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const LoginScreen(),
+                          ),
+                        );
                       }
                     },
                     style: ElevatedButton.styleFrom(

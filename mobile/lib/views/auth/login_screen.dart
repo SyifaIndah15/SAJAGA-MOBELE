@@ -19,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
 
   bool _obscurePassword = true;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -123,7 +124,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                     validator: Validator.validatePassword,
                   ),
-
+                  if (_errorMessage != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        _errorMessage!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.red, fontSize: 13),
+                      ),
+                    ),
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
@@ -135,6 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         );
                       },
+
                       child: Text(
                         'Lupa Kata Sandi?',
                         style: textTheme.labelMedium?.copyWith(
@@ -148,12 +158,28 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   ElevatedButton(
                     onPressed: () {
-                      if (_formKey.currentState!.validate()) {
+                      print("TOMBOL LOGIN DITEKAN");
+                      if (!_formKey.currentState!.validate()) {
+                        print("VALIDASI GAGAL");
+                        return;
+                      }
+                      print("VALIDASI BERHASIL");
+                      final email = _emailController.text.trim();
+                      final password = _passwordController.text.trim();
+                      print(email);
+                      print(password);
+                      if (email == "test@sajaga.com" &&
+                          password == "12345678") {
                         Navigator.pushNamedAndRemoveUntil(
                           context,
                           AppRoutes.home,
                           (route) => false,
                         );
+                      } else {
+                        print("LOGIN GAGAL");
+                        setState(() {
+                          _errorMessage = "Email atau kata sandi tidak sesuai";
+                        });
                       }
                     },
                     style: ElevatedButton.styleFrom(

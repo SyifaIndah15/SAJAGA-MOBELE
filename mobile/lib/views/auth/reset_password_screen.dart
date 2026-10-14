@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../config/app_constant.dart';
 import '../../utils/validator.dart';
 
@@ -6,8 +7,7 @@ class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({Key? key}) : super(key: key);
 
   @override
-  State<ResetPasswordScreen> createState() =>
-      _ResetPasswordScreenState();
+  State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
 }
 
 class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
@@ -35,25 +35,17 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back,
-            color: AppColors.navy,
-          ),
+          icon: const Icon(Icons.arrow_back, color: AppColors.navy),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Security Verification',
-          style: textTheme.titleSmall?.copyWith(
-            color: AppColors.grey,
-          ),
+          'Atur Ulang Kata Sandi',
+          style: textTheme.titleSmall?.copyWith(color: AppColors.grey),
         ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 12,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           child: Form(
             key: _formKey,
             child: Column(
@@ -69,11 +61,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 const SizedBox(height: 6),
 
                 Text(
-                  'Kata sandi baru Anda harus berbeda dari kata '
-                  'sandi yang pernah digunakan sebelumnya.',
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: AppColors.grey,
-                  ),
+                  'Buat kata sandi baru untuk mengamankan kembali '
+                  'akun SAJAGA Anda.',
+                  style: textTheme.bodyMedium?.copyWith(color: AppColors.grey),
                 ),
                 const SizedBox(height: 24),
 
@@ -164,9 +154,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.white,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 16,
-                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -194,10 +182,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   }) {
     return InputDecoration(
       hintText: hintText,
-      hintStyle: TextStyle(
-        color: AppColors.grey,
-        fontSize: 13,
-      ),
+      hintStyle: TextStyle(color: AppColors.grey, fontSize: 13),
       prefixIcon: const Icon(
         Icons.lock_outline,
         size: 20,
@@ -206,41 +191,26 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: AppColors.white,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 14,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(
-          color: AppColors.lightBlue,
-        ),
+        borderSide: const BorderSide(color: AppColors.lightBlue),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(
-          color: AppColors.lightBlue,
-        ),
+        borderSide: const BorderSide(color: AppColors.lightBlue),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(
-          color: AppColors.primary,
-          width: 1.5,
-        ),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(
-          color: Colors.red,
-        ),
+        borderSide: const BorderSide(color: Colors.red),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(
-          color: Colors.red,
-          width: 1.5,
-        ),
+        borderSide: const BorderSide(color: Colors.red, width: 1.5),
       ),
     );
   }
