@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../services/auth_service.dart';
 
 import '../../config/app_constant.dart';
 import '../../utils/validator.dart';
@@ -17,7 +20,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
   bool _obscurePassword = true;
   String? _errorMessage;
 
@@ -157,31 +161,66 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 8),
 
                   ElevatedButton(
-                    onPressed: () {
-                      print("TOMBOL LOGIN DITEKAN");
-                      if (!_formKey.currentState!.validate()) {
-                        print("VALIDASI GAGAL");
-                        return;
-                      }
-                      print("VALIDASI BERHASIL");
-                      final email = _emailController.text.trim();
-                      final password = _passwordController.text.trim();
-                      print(email);
-                      print(password);
-                      if (email == "test@sajaga.com" &&
-                          password == "12345678") {
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          AppRoutes.home,
-                          (route) => false,
-                        );
-                      } else {
-                        print("LOGIN GAGAL");
-                        setState(() {
-                          _errorMessage = "Email atau kata sandi tidak sesuai";
-                        });
-                      }
-                    },
+                    onPressed: _isLoading
+                        ? null
+                        : () async {
+                            if (!_formKey.currentState!.validate()) {
+                              return;
+                            }
+
+                            setState(() {
+                              _isLoading = true;
+                              _errorMessage = null;
+                            });
+
+                            try {
+                              final response = await _authService.signIn(
+                                email: _emailController.text.trim(),
+                                password: _passwordController.text,
+                              );
+
+                              if (!mounted) return;
+
+                              if (response.user != null &&
+                                  response.session != null) {
+                                Navigator.pushNamedAndRemoveUntil(
+                                  context,
+                                  AppRoutes.home,
+                                  (route) => false,
+                                );
+                              }
+                            } on AuthException catch (e) {
+                              if (!mounted) return;
+
+                              setState(() {
+                                if (e.message.toLowerCase().contains(
+                                  'email not confirmed',
+                                )) {
+                                  _errorMessage = 'Email belum diverifikasi. Silakan periksa email Anda.';
+                                } else if (e.message.toLowerCase().contains(
+                                  'invalid login credentials',
+                                )) {
+                                  _errorMessage =
+                                      'Email atau kata sandi tidak sesuai.';
+                                } else {
+                                  _errorMessage = e.message;
+                                }
+                              });
+                            } catch (e) {
+                              if (!mounted) return;
+
+                              setState(() {
+                                _errorMessage = 'Login gagal. Periksa koneksi dan coba lagi.';
+                              });
+                            } finally {
+                              if (mounted) {
+                                setState(() {
+                                  _isLoading = false;
+                                });
+                              }
+                            }
+                          },
+
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: AppColors.white,

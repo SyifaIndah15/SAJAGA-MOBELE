@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../services/auth_service.dart';
 import '../../config/app_constant.dart';
 import '../../utils/validator.dart';
 import 'login_screen.dart';
@@ -15,7 +16,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
   bool _obscurePassword = true;
 
   @override
@@ -195,16 +197,67 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   const SizedBox(height: 24),
 
                   ElevatedButton(
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const LoginScreen(),
-                          ),
-                        );
-                      }
-                    },
+                    onPressed: _isLoading
+                        ? null
+                        : () async {
+                            if (!_formKey.currentState!.validate()) {
+                              return;
+                            }
+
+                            setState(() {
+                              _isLoading = true;
+                            });
+
+                            try {
+                              final response = await _authService.signUp(
+                                email: _emailController.text.trim(),
+                                password: _passwordController.text,
+                              );
+
+                              if (!mounted) return;
+
+                              if (response.user != null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      response.session == null
+                                          ? 'Pendaftaran berhasil. Periksa email untuk verifikasi.'
+                                          : 'Pendaftaran berhasil. Silakan masuk.',
+                                    ),
+                                  ),
+                                );
+
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const LoginScreen(),
+                                  ),
+                                );
+                              }
+                            } on AuthException catch (e) {
+                              if (!mounted) return;
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(e.message)),
+                              );
+                            } catch (e) {
+                              if (!mounted) return;
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Pendaftaran gagal. Periksa koneksi aplikasi.',
+                                  ),
+                                ),
+                              );
+                            } finally {
+                              if (mounted) {
+                                setState(() {
+                                  _isLoading = false;
+                                });
+                              }
+                            }
+                          },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: AppColors.white,
@@ -213,13 +266,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: Text(
-                      'Daftar Sekarang →',
-                      style: textTheme.titleSmall?.copyWith(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.white,
+                            ),
+                          )
+                        : Text(
+                            'Daftar Sekarang →',
+                            style: textTheme.titleSmall?.copyWith(
+                              color: AppColors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
 
                   const SizedBox(height: 16),
