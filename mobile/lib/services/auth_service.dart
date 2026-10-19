@@ -1,4 +1,3 @@
-
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthService {
@@ -9,10 +8,7 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-    return await _supabase.auth.signUp(
-      email: email.trim(),
-      password: password,
-    );
+    return await _supabase.auth.signUp(email: email.trim(), password: password);
   }
 
   // Login dengan email dan kata sandi
@@ -27,18 +23,16 @@ class AuthService {
   }
 
   // Mengirim tautan reset kata sandi
-  Future<void> sendPasswordResetEmail({
-    required String email,
-  }) async {
+
+  Future<void> sendPasswordResetEmail({required String email}) async {
     await _supabase.auth.resetPasswordForEmail(
       email.trim(),
+      redirectTo: Uri.base.origin,
     );
   }
 
   // Menyimpan kata sandi baru untuk pengguna terautentikasi
-  Future<UserResponse> updatePassword({
-    required String newPassword,
-  }) async {
+  Future<UserResponse> updatePassword({required String newPassword}) async {
     return await _supabase.auth.updateUser(
       UserAttributes(password: newPassword),
     );

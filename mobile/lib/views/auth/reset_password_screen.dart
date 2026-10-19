@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../services/auth_service.dart';
 import '../../config/app_constant.dart';
 import '../../utils/validator.dart';
 
@@ -14,6 +16,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
 
   bool _obscure1 = true;
   bool _obscure2 = true;
@@ -145,12 +149,61 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 const SizedBox(height: 24),
 
                 ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      // TODO: Hubungkan ke proses perubahan
-                      // kata sandi melalui Supabase Auth.
-                    }
-                  },
+                  onPressed: _isLoading
+                      ? null
+                      : () async {
+                          if (!_formKey.currentState!.validate()) {
+                            return;
+                          }
+
+                          setState(() {
+                            _isLoading = true;
+                          });
+
+                          try {
+                            await _authService.updatePassword(
+                              newPassword: _newPasswordController.text,
+                            );
+
+                            if (!mounted) return;
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Kata sandi berhasil diperbarui. Silakan login kembali.',
+                                ),
+                              ),
+                            );
+
+                            Navigator.pushNamedAndRemoveUntil(
+                              context,
+                              '/login',
+                              (route) => false,
+                            );
+                          } on AuthException catch (e) {
+                            if (!mounted) return;
+
+                            ScaffoldMessenger.of(
+                              context,
+                            ).showSnackBar(SnackBar(content: Text(e.message)));
+                          } catch (e) {
+                            if (!mounted) return;
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Gagal memperbarui kata sandi. Coba lagi.',
+                                ),
+                              ),
+                            );
+                          } finally {
+                            if (mounted) {
+                              setState(() {
+                                _isLoading = false;
+                              });
+                            }
+                          }
+                        },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.white,
@@ -160,13 +213,22 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text(
-                    'Simpan Kata Sandi →',
-                    style: textTheme.titleMedium?.copyWith(
-                      color: AppColors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.white,
+                          ),
+                        )
+                      : Text(
+                          'Simpan Kata Sandi →',
+                          style: textTheme.titleMedium?.copyWith(
+                            color: AppColors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ],
             ),
