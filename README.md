@@ -95,7 +95,7 @@ Klasifikasi Jadwal Obat dengan Pengingat Otomatis
     <td align="center">
       <img width="100" height="100" alt="Muthia" src="https://ui-avatars.com/api/?name=Muthia+Sangadji&background=0D8ABC&color=fff&size=100" />
       <br />
-      <a href="https://github.com/magicarIThesa">
+      <a href="https://github.com/magicarlThesa">
       <sub><b>Muthia Sangadji</b></sub>
       </a>
       <br />
@@ -107,8 +107,10 @@ Klasifikasi Jadwal Obat dengan Pengingat Otomatis
   <tr>
     <td align="center">
       <img width="100" height="100" alt="Falisha" src="https://ui-avatars.com/api/?name=Falisha+Putri+Darsono&background=0D8ABC&color=fff&size=100" />
-      <br />
+       <a href="https://github.com/falishaseoul-wq">
+       <br />
       <sub><b>Falisha Putri Darsono</b></sub>
+       </a>
       <br />
       <sub>NIM: 07352411039</sub>
       <br />
