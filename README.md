@@ -71,6 +71,7 @@ Klasifikasi Jadwal Obat dengan Pengingat Otomatis
 <table>
   <tr>
     <td align="center">
+      <a href="https://github.com/nura_256">
       <img width="100" height="100" alt="Nisma" src="https://ui-avatars.com/api/?name=Nisma+Nur+Adzania&background=0D8ABC&color=fff&size=100" />
       <br />
       <sub><b>Nisma Nur Adzania</b></sub>
