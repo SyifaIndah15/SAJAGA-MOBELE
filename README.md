@@ -75,6 +75,7 @@ Klasifikasi Jadwal Obat dengan Pengingat Otomatis
       <img width="100" height="100" alt="Nisma" src="https://ui-avatars.com/api/?name=Nisma+Nur+Adzania&background=0D8ABC&color=fff&size=100" />
       <br />
       <sub><b>Nisma Nur Adzania</b></sub>
+      </a>
       <br />
       <sub>NPM: 07352411129</sub>
       <br />
