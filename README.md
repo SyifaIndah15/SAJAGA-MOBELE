@@ -75,7 +75,7 @@ Klasifikasi Jadwal Obat dengan Pengingat Otomatis
       <br />
       <sub><b>Nisma Nur Adzania</b></sub>
       <br />
-      <sub>NIM: 07352411129</sub>
+      <sub>NPM: 07352411129</sub>
       <br />
       <sub>Sistem Analis</sub>
     </td>
