@@ -1,9 +1,11 @@
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../config/app_constant.dart';
 import '../../routes/app_routes.dart';
 import '../medication/add_medication_screen.dart';
+import '../food/food_recommendation_screen.dart';
 
 const Color _pageBackground = Color(0xFFF4FAFD);
 const Color _borderColor = Color(0xFFE5EEF5);
@@ -149,9 +151,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 18),
                     _RecommendationCard(
-                      onRecommendationTap: () => _showPrototypeMessage(
-                        'Halaman rekomendasi makanan belum terhubung.',
-                      ),
+                      onRecommendationTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const FoodRecommendationScreen(),
+                          ),
+                        );
+                      },
                       onAllergyTap: () => _showPrototypeMessage(
                         'Pemeriksaan alergi belum terhubung.',
                       ),
@@ -225,7 +233,9 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFEAF3F8), width: 1)),
+        border: Border(
+          bottom: BorderSide(color: Color(0xFFEAF3F8), width: 1),
+        ),
       ),
       child: Row(
         children: [
@@ -354,7 +364,10 @@ class _QuickActionCardState extends State<_QuickActionCard> {
             borderRadius: BorderRadius.circular(15),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 130),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 10,
+              ),
               decoration: BoxDecoration(
                 color: _hovered ? const Color(0xFFFCFEFF) : Colors.white,
                 borderRadius: BorderRadius.circular(15),
@@ -381,7 +394,11 @@ class _QuickActionCardState extends State<_QuickActionCard> {
                       shape: BoxShape.circle,
                     ),
                     alignment: Alignment.center,
-                    child: Icon(widget.icon, color: widget.iconColor, size: 17),
+                    child: Icon(
+                      widget.icon,
+                      color: widget.iconColor,
+                      size: 17,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -423,7 +440,10 @@ class _QuickActionCardState extends State<_QuickActionCard> {
 }
 
 class _SectionHeading extends StatelessWidget {
-  const _SectionHeading({required this.title, required this.trailing});
+  const _SectionHeading({
+    required this.title,
+    required this.trailing,
+  });
 
   final String title;
   final String trailing;
@@ -442,7 +462,10 @@ class _SectionHeading extends StatelessWidget {
             ),
           ),
         ),
-        Text(trailing, style: const TextStyle(fontSize: 9, color: _mutedText)),
+        Text(
+          trailing,
+          style: const TextStyle(fontSize: 9, color: _mutedText),
+        ),
       ],
     );
   }
@@ -521,7 +544,11 @@ class _RecommendationCard extends StatelessWidget {
             'Temukan santapan yang ramah\n'
             'lambung dan aman dari alergi\n'
             'tubuhmu.',
-            style: TextStyle(color: Colors.white, fontSize: 13, height: 1.55),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              height: 1.55,
+            ),
           ),
           const SizedBox(height: 16),
           Wrap(
@@ -545,7 +572,9 @@ class _RecommendationCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Flexible(
-                child: _RecommendationButton(onTap: onRecommendationTap),
+                child: _RecommendationButton(
+                  onTap: onRecommendationTap,
+                ),
               ),
               const SizedBox(width: 12),
               const Flexible(
@@ -603,7 +632,10 @@ class _RecommendationTagState extends State<_RecommendationTag> {
           borderRadius: BorderRadius.circular(20),
           splashColor: Colors.white.withValues(alpha: 0.22),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 7,
+            ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -632,7 +664,8 @@ class _RecommendationButton extends StatefulWidget {
   final VoidCallback onTap;
 
   @override
-  State<_RecommendationButton> createState() => _RecommendationButtonState();
+  State<_RecommendationButton> createState() =>
+      _RecommendationButtonState();
 }
 
 class _RecommendationButtonState extends State<_RecommendationButton> {
@@ -677,7 +710,11 @@ class _RecommendationButtonState extends State<_RecommendationButton> {
                     ),
                   ),
                   SizedBox(width: 5),
-                  Icon(Icons.arrow_forward, color: Color(0xFF0369A1), size: 17),
+                  Icon(
+                    Icons.arrow_forward,
+                    color: Color(0xFF0369A1),
+                    size: 17,
+                  ),
                 ],
               ),
             ),
@@ -703,7 +740,9 @@ class _PrototypeBottomNavigation extends StatelessWidget {
       height: 66,
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFEAF0F5), width: 1)),
+        border: Border(
+          top: BorderSide(color: Color(0xFFEAF0F5), width: 1),
+        ),
       ),
       child: Row(
         children: [

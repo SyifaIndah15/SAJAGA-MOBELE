@@ -7,6 +7,7 @@ import '../widgets/profile_menu_tile.dart';
 import '../widgets/reminder_tile.dart';
 import '../widgets/history_item_card.dart';
 import '../history/history_screen.dart';
+import '../../routes/app_routes.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -183,7 +184,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Text(
                   _getInitials(_userName),
                   style: const TextStyle(
-                    
+
                     color: AppColors.primary,
                     fontWeight: FontWeight.w700,
                     fontSize: 20,
@@ -220,7 +221,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _userName,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              
+
               fontWeight: FontWeight.w700,
               fontSize: 16,
               color: AppColors.navy,
@@ -230,7 +231,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Text(
             _userEmail.isNotEmpty ? _userEmail : 'Email tidak tersedia',
             style: const TextStyle(
-              
+
               fontWeight: FontWeight.w400,
               fontSize: 12,
               color: AppColors.grey,
@@ -356,7 +357,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Center(
             child: Text(
               title,
-              style: TextStyle(    
+              style: TextStyle(
                 color: isSelected
                     ? AppColors.primary
                     : AppColors.grey,
@@ -460,7 +461,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title: const Text(
                 'Keluar Akun',
                 style: TextStyle(
-                  
+
                   fontWeight: FontWeight.w700,
                   color: AppColors.navy,
                 ),
@@ -468,7 +469,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               content: const Text(
                 'Apakah Anda yakin ingin keluar dari aplikasi?',
                 style: TextStyle(
-                  
+
                   fontWeight: FontWeight.w400,
                   color: AppColors.grey,
                 ),
@@ -479,7 +480,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: const Text(
                     'Batal',
                     style: TextStyle(
-                      
+
                       fontWeight: FontWeight.w500,
                       color: AppColors.grey,
                     ),
@@ -514,7 +515,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: const Text(
                     "Keluar",
                     style: TextStyle(
-                      
+
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -530,7 +531,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         label: const Text(
           "Keluar Akun",
           style: TextStyle(
-            
+
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -554,7 +555,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           SizedBox(height: 2),
           Text(
             "Waktunya Dijaga, Sehatnya Dijaga",
-            style: TextStyle(              
+            style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w400,
               color: AppColors.grey,
@@ -566,6 +567,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // Navigasi bawah.
+
   Widget _buildBottomNav() {
     return BottomNavigationBar(
       currentIndex: 1,
@@ -577,10 +579,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
         fontWeight: FontWeight.w600,
         fontSize: 12,
       ),
-      unselectedLabelStyle: const TextStyle(        
+      unselectedLabelStyle: const TextStyle(
         fontWeight: FontWeight.w400,
         fontSize: 12,
       ),
+
+      // Navigasi antarhalaman
+      onTap: (index) {
+        if (index == 0) {
+          Navigator.popUntil(
+            context,
+            ModalRoute.withName(AppRoutes.home),
+          );
+        }
+      },
+
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.home_outlined),
@@ -595,6 +608,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ],
     );
   }
+
 
   // Inisial avatar.
   String _getInitials(String name) {
