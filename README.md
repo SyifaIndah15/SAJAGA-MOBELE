@@ -71,7 +71,7 @@ Klasifikasi Jadwal Obat dengan Pengingat Otomatis
 <table>
   <tr>
     <td align="center">
-      <a href="https://github.com/nura_256">
+      <a href="https://github.com/nismanuradzania">
       <img width="100" height="100" alt="Nisma" src="https://ui-avatars.com/api/?name=Nisma+Nur+Adzania&background=0D8ABC&color=fff&size=100" />
       <br />
       <sub><b>Nisma Nur Adzania</b></sub>
@@ -84,9 +84,11 @@ Klasifikasi Jadwal Obat dengan Pengingat Otomatis
     <td align="center">
       <img width="100" height="100" alt="Syifa" src="https://ui-avatars.com/api/?name=Syifa+Indah+Maulany&background=0D8ABC&color=fff&size=100" />
       <br />
+      <a href="https://github.com/SyifaIndah15">
       <sub><b>Syifa Indah Maulany</b></sub>
+      </a>
       <br />
-      <sub>NIM: 07352411012</sub>
+      <sub>NPM: 07352411012</sub>
       <br />
       <sub>Sistem Analis</sub>
     </td>
