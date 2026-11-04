@@ -64,3 +64,17 @@ Klasifikasi Jadwal Obat dengan Pengingat Otomatis
 ---
 
 ## 📱 Struktur Folder Utama
+```text
+lib/
+├── config/              # Konfigurasi tema visual dan routing aplikasi
+├── routes/              # Manajemen navigasi antar halaman
+├── utils/               # Fungsi bantuan (helper), termasuk notification_helper.dart
+├── views/
+│   ├── auth/            # Login, Register, Forgot Password, Email Verification
+│   ├── home/            # Halaman Beranda (Ringkasan obat, makan, dan navigasi)
+│   ├── medication/      # Kelola Obat (List, Add, Edit, Detail)
+│   ├── meal/            # Jadwal Makan (Schedule, Add Meal)
+│   ├── food/            # Rekomendasi Makanan (List & Detail)
+│   ├── profile/         # Profil & Pengaturan Pengguna
+│   └── history/         # Riwayat Terpadu (Riwayat Obat & Riwayat Makan)
+└── main.dart            # Entry point aplikasi
