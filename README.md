@@ -63,6 +63,89 @@ Klasifikasi Jadwal Obat dengan Pengingat Otomatis
 
 ---
 
+
+---
+
+## 👥 Tim Pengembang
+
+<table>
+  <tr>
+    <td align="center">
+      <img width="100" height="100" alt="Nisma" src="https://ui-avatars.com/api/?name=Nisma+Nur+Adzania&background=0D8ABC&color=fff&size=100" />
+      <br />
+      <sub><b>Nisma Nur Adzania</b></sub>
+      <br />
+      <sub>NIM: 07352411129</sub>
+      <br />
+      <sub>Sistem Analis</sub>
+    </td>
+    <td align="center">
+      <img width="100" height="100" alt="Syifa" src="https://ui-avatars.com/api/?name=Syifa+Indah+Maulany&background=0D8ABC&color=fff&size=100" />
+      <br />
+      <sub><b>Syifa Indah Maulany</b></sub>
+      <br />
+      <sub>NIM: 07352411012</sub>
+      <br />
+      <sub>Sistem Analis</sub>
+    </td>
+    <td align="center">
+      <img width="100" height="100" alt="Muthia" src="https://ui-avatars.com/api/?name=Muthia+Sangadji&background=0D8ABC&color=fff&size=100" />
+      <br />
+      <sub><b>Muthia Sangadji</b></sub>
+      <br />
+      <sub>NIM: 07352411016</sub>
+      <br />
+      <sub>Front End Developer</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img width="100" height="100" alt="Falisha" src="https://ui-avatars.com/api/?name=Falisha+Putri+Darsono&background=0D8ABC&color=fff&size=100" />
+      <br />
+      <sub><b>Falisha Putri Darsono</b></sub>
+      <br />
+      <sub>NIM: 07352411039</sub>
+      <br />
+      <sub>Front End Developer</sub>
+    </td>
+    <td align="center">
+      <img width="100" height="100" alt="Azzahra" src="https://ui-avatars.com/api/?name=Azzahra+Sri+W&background=0D8ABC&color=fff&size=100" />
+      <br />
+      <sub><b>Azzahra Sri Widodo Putri</b></sub>
+      <br />
+      <sub>NIM: 07352411066</sub>
+      <br />
+      <sub>Back End Developer</sub>
+    </td>
+    <td align="center">
+      <img width="100" height="100" alt="Bayu" src="https://ui-avatars.com/api/?name=Bayu+Cahyo+S&background=0D8ABC&color=fff&size=100" />
+      <br />
+      <sub><b>Bayu Cahyo Saputra</b></sub>
+      <br />
+      <sub>NIM: 07352411074</sub>
+      <br />
+      <sub>Back End Developer</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
+## 🚀 Cara Menjalankan Aplikasi
+
+### Prasyarat
+- Flutter SDK (versi 3.0 atau lebih tinggi)
+- Dart SDK
+- Android Studio / VS Code
+- Emulator atau device fisik
+
+### Langkah-langkah Instalasi
+
+1. **Clone repository ini:**
+   ```bash
+   git clone https://github.com/SyifaIndah15/SAJAGA-MOBELE.git
+   cd SAJAGA-MOBELE
+
 ## 📱 Struktur Folder Utama
 ```text
 lib/
@@ -78,3 +161,4 @@ lib/
 │   ├── profile/         # Profil & Pengaturan Pengguna
 │   └── history/         # Riwayat Terpadu (Riwayat Obat & Riwayat Makan)
 └── main.dart            # Entry point aplikasi
+
