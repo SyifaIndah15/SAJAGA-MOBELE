@@ -123,9 +123,9 @@ Klasifikasi Jadwal Obat dengan Pengingat Otomatis
         <a href="https://github.com/putriazza44-dotcom">
       <br />
         </a>
-      <sub>NIM: 07352411066</sub>
+      <sub>NPM: 07352411066</sub>
       <br />
-      <sub>Back End Developer</sub>
+      <sub>BE Developer</sub>
     </td>
     <td align="center">
       <img width="100" height="100" alt="Bayu" src="https://ui-avatars.com/api/?name=Bayu+Cahyo+S&background=0D8ABC&color=fff&size=100" />
