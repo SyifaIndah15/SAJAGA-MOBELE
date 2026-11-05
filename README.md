@@ -120,7 +120,9 @@ Klasifikasi Jadwal Obat dengan Pengingat Otomatis
       <img width="100" height="100" alt="Azzahra" src="https://ui-avatars.com/api/?name=Azzahra+Sri+W&background=0D8ABC&color=fff&size=100" />
       <br />
       <sub><b>Azzahra Sri Widodo Putri</b></sub>
+        <a href="https://github.com/putriazza44-dotcom">
       <br />
+        </a>
       <sub>NIM: 07352411066</sub>
       <br />
       <sub>Back End Developer</sub>
@@ -151,11 +153,13 @@ Klasifikasi Jadwal Obat dengan Pengingat Otomatis
 
 1. **Clone repository ini:**
    ```bash
+   
    git clone https://github.com/SyifaIndah15/SAJAGA-MOBELE.git
    cd SAJAGA-MOBELE
 
 ## 📱 Struktur Folder Utama
 ```text
+
 lib/
 ├── config/              # Konfigurasi tema visual dan routing aplikasi
 ├── routes/              # Manajemen navigasi antar halaman
