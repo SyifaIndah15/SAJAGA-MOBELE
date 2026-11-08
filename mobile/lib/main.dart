@@ -37,7 +37,10 @@ class _MyAppState extends State<MyApp> {
       data,
     ) {
       if (data.event == AuthChangeEvent.passwordRecovery) {
-        navigatorKey.currentState?.pushNamed(AppRoutes.resetPassword);
+        navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          AppRoutes.resetPassword,
+          (route) => false,
+        );
       }
     });
   }

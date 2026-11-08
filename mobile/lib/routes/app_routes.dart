@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../views/auth/login_screen.dart';
 import '../views/auth/forgot_password_screen.dart';
 import '../views/auth/reset_password_screen.dart';
+import '../views/auth/reset_password_success_screen.dart';
 import '../views/home/home_screen.dart';
 import '../views/profile/profile_screen.dart';
 
@@ -12,6 +13,7 @@ class AppRoutes {
   static const String profile = '/profile';
   static const String forgotPassword = '/forgot-password';
   static const String resetPassword = '/reset-password';
+  static const String resetPasswordSuccess = '/reset-password-success';
 
   static final Map<String, WidgetBuilder> routes = {
     login: (context) => const LoginScreen(),
@@ -19,5 +21,6 @@ class AppRoutes {
     profile: (context) => const ProfileScreen(),
     forgotPassword: (context) => const ForgotPasswordScreen(),
     resetPassword: (context) => const ResetPasswordScreen(),
+    resetPasswordSuccess: (context) => const ResetPasswordSuccessScreen(),
   };
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthService {
@@ -27,7 +28,7 @@ class AuthService {
   Future<void> sendPasswordResetEmail({required String email}) async {
     await _supabase.auth.resetPasswordForEmail(
       email.trim(),
-      redirectTo: Uri.base.origin,
+      redirectTo: kIsWeb ? Uri.base.origin : 'sajaga://login-callback/',
     );
   }
 
