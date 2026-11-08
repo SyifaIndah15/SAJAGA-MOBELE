@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../../config/app_constant.dart';
 import '../widgets/medication_form_field.dart';
 
@@ -12,20 +14,18 @@ class AddMedicationScreen extends StatefulWidget {
 class _AddMedicationScreenState extends State<AddMedicationScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers untuk input
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _doseController = TextEditingController();
 
-  // State
   String _selectedFrequency = '3x Sehari';
   String _selectedMealInstruction = 'Setelah Makan';
   int _durationDays = 7;
   List<ScheduleTime> _schedules = [];
+  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    // Default 3x sehari
     _updateSchedulesFromFrequency('3x Sehari');
   }
 
@@ -36,7 +36,6 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
     super.dispose();
   }
 
-  // Update jadwal berdasarkan frekuensi
   void _updateSchedulesFromFrequency(String frequency) {
     setState(() {
       _selectedFrequency = frequency;
@@ -44,19 +43,57 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
 
       switch (frequency) {
         case '1x Sehari':
-          _schedules.add(ScheduleTime(label: 'Dosis Pagi', time: '07.00', tag: 'JAM 1'));
+          _schedules.add(
+            const ScheduleTime(
+              label: 'Dosis Pagi',
+              time: '07.00',
+              tag: 'JAM 1',
+            ),
+          );
           break;
+
         case '2x Sehari':
-          _schedules.add(ScheduleTime(label: 'Dosis Pagi', time: '07.00', tag: 'JAM 1'));
-          _schedules.add(ScheduleTime(label: 'Dosis Malam', time: '21.00', tag: 'JAM 2'));
+          _schedules.add(
+            const ScheduleTime(
+              label: 'Dosis Pagi',
+              time: '07.00',
+              tag: 'JAM 1',
+            ),
+          );
+          _schedules.add(
+            const ScheduleTime(
+              label: 'Dosis Malam',
+              time: '21.00',
+              tag: 'JAM 2',
+            ),
+          );
           break;
+
         case '3x Sehari':
-          _schedules.add(ScheduleTime(label: 'Dosis Pagi', time: '07.00', tag: 'JAM 1'));
-          _schedules.add(ScheduleTime(label: 'Dosis Siang', time: '13.00', tag: 'JAM 2'));
-          _schedules.add(ScheduleTime(label: 'Dosis Malam', time: '21.00', tag: 'JAM 3'));
+          _schedules.add(
+            const ScheduleTime(
+              label: 'Dosis Pagi',
+              time: '07.00',
+              tag: 'JAM 1',
+            ),
+          );
+          _schedules.add(
+            const ScheduleTime(
+              label: 'Dosis Siang',
+              time: '13.00',
+              tag: 'JAM 2',
+            ),
+          );
+          _schedules.add(
+            const ScheduleTime(
+              label: 'Dosis Malam',
+              time: '21.00',
+              tag: 'JAM 3',
+            ),
+          );
           break;
+
         case 'Sesuai Kebutuhan':
-          // Tidak ada default, user tambah manual
           break;
       }
     });
@@ -64,11 +101,10 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
 
   void _addNewSchedule() {
     setState(() {
-      _schedules.add(ScheduleTime(
-        label: 'Dosis ${_schedules.length + 1}',
-        time: '08.00',
-        tag: 'JAM ${_schedules.length + 1}',
-      ));
+      final number = _schedules.length + 1;
+      _schedules.add(
+        ScheduleTime(label: 'Dosis $number', time: '08.00', tag: 'JAM $number'),
+      );
     });
   }
 
@@ -96,7 +132,6 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Input Nama Obat & Dosis (pakai MedicationFormField)
               MedicationFormField(
                 label: 'Nama Obat',
                 hintText: 'Amoxicillin',
@@ -113,28 +148,16 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                 controller: _doseController,
               ),
               const SizedBox(height: 20),
-
-              // Frekuensi Konsumsi
               _buildFrequencySection(),
               const SizedBox(height: 20),
-
-              // Jadwal Waktu Minum
               _buildScheduleSection(),
               const SizedBox(height: 20),
-
-              // Durasi Konsumsi
               _buildDurationSection(),
               const SizedBox(height: 20),
-
-              // Instruksi Jam Makan
               _buildMealInstructionSection(),
               const SizedBox(height: 24),
-
-              // Pratinjau Pengingat
               _buildPreviewSection(),
               const SizedBox(height: 16),
-
-              // Tombol Simpan
               _buildSaveButton(),
               const SizedBox(height: 20),
             ],
@@ -144,7 +167,6 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
     );
   }
 
-  // ── App Bar ───────────────────────────────────────────────
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       backgroundColor: AppColors.background,
@@ -175,7 +197,6 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
     );
   }
 
-  // ─── Frekuensi Konsumsi ───────────────────────────────────
   Widget _buildFrequencySection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,7 +237,6 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
     );
   }
 
-  // ─── Jadwal Waktu Minum ────────────────────────────────────
   Widget _buildScheduleSection() {
     final isCustomFrequency = _selectedFrequency == 'Sesuai Kebutuhan';
 
@@ -239,28 +259,31 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
           ],
         ),
         const SizedBox(height: 12),
-
-        // Tampilkan list jadwal
         if (_schedules.isNotEmpty)
           ..._schedules.asMap().entries.map((entry) {
             final index = entry.key;
             final schedule = entry.value;
+
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: _ScheduleTimeItem(
                 schedule: schedule,
                 onTimeChanged: (newTime) => _updateScheduleTime(index, newTime),
-                onRemove: _schedules.length > 1 ? () => _removeSchedule(index) : null,
+                onRemove: _schedules.length > 1
+                    ? () => _removeSchedule(index)
+                    : null,
               ),
             );
           }),
-
-        // Tombol Tambah Jam Minum
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: _addNewSchedule,
-            icon: const Icon(Icons.access_time, color: AppColors.primary, size: 18),
+            icon: const Icon(
+              Icons.access_time,
+              color: AppColors.primary,
+              size: 18,
+            ),
             label: const Text(
               'Tambah Jam Minum',
               style: TextStyle(
@@ -273,7 +296,9 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 12),
               side: const BorderSide(color: AppColors.lightBlue),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
         ),
@@ -281,7 +306,6 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
     );
   }
 
-  // ─── Durasi Konsumsi ───────────────────────────────────────
   Widget _buildDurationSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,18 +324,18 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
-                    '7 Hari',
-                    style: TextStyle(
+                    '$_durationDays Hari',
+                    style: const TextStyle(
                       fontFamily: 'PlusJakartaSans',
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: AppColors.navy,
                     ),
                   ),
-                  SizedBox(height: 4),
-                  Text(
+                  const SizedBox(height: 4),
+                  const Text(
                     'Hingga resep selesai dihabiskan',
                     style: TextStyle(
                       fontFamily: 'PlusJakartaSans',
@@ -324,7 +348,9 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
               Row(
                 children: [
                   _buildDurationButton(Icons.remove, () {
-                    if (_durationDays > 1) setState(() => _durationDays--);
+                    if (_durationDays > 1) {
+                      setState(() => _durationDays--);
+                    }
                   }),
                   const SizedBox(width: 16),
                   Text(
@@ -364,7 +390,6 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
     );
   }
 
-  // ─── Instruksi Jam Makan ───────────────────────────────────
   Widget _buildMealInstructionSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -402,13 +427,17 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                   _MealToggle(
                     label: 'Sebelum Makan',
                     isSelected: _selectedMealInstruction == 'Sebelum Makan',
-                    onTap: () => setState(() => _selectedMealInstruction = 'Sebelum Makan'),
+                    onTap: () => setState(
+                      () => _selectedMealInstruction = 'Sebelum Makan',
+                    ),
                   ),
                   const SizedBox(width: 12),
                   _MealToggle(
                     label: 'Setelah Makan',
                     isSelected: _selectedMealInstruction == 'Setelah Makan',
-                    onTap: () => setState(() => _selectedMealInstruction = 'Setelah Makan'),
+                    onTap: () => setState(
+                      () => _selectedMealInstruction = 'Setelah Makan',
+                    ),
                   ),
                 ],
               ),
@@ -419,10 +448,13 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
     );
   }
 
-  // ─── Pratinjau Pengingat ───────────────────────────────────
   Widget _buildPreviewSection() {
-    final drugName = _nameController.text.isEmpty ? 'Amoxicillin' : _nameController.text;
-    final drugDose = _doseController.text.isEmpty ? '500 mg' : _doseController.text;
+    final drugName = _nameController.text.isEmpty
+        ? 'Amoxicillin'
+        : _nameController.text;
+    final drugDose = _doseController.text.isEmpty
+        ? '500 mg'
+        : _doseController.text;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -438,7 +470,6 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
           ),
           child: Column(
             children: [
-              // Header
               Row(
                 children: [
                   Container(
@@ -462,7 +493,10 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.lightBlue,
                       borderRadius: BorderRadius.circular(12),
@@ -480,26 +514,26 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-
-              // List jadwal
               if (_schedules.isNotEmpty)
-                ..._schedules.map((schedule) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _PreviewTimelineItem(
-                        time: '${schedule.time} WIB',
-                        meal: _selectedMealInstruction,
-                      ),
-                    )),
-
+                ..._schedules.map(
+                  (schedule) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _PreviewTimelineItem(
+                      time: '${schedule.time} WIB',
+                      meal: _selectedMealInstruction,
+                    ),
+                  ),
+                ),
               const Divider(height: 1),
               const SizedBox(height: 12),
-
-              // Footer status
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.lightBlue,
                       borderRadius: BorderRadius.circular(8),
@@ -507,7 +541,11 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.calendar_today, color: AppColors.primary, size: 12),
+                        const Icon(
+                          Icons.calendar_today,
+                          color: AppColors.primary,
+                          size: 12,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           'Berjalan selama $_durationDays hari',
@@ -538,27 +576,125 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
     );
   }
 
-  // ─── Tombol Simpan ─────────────────────────────────────────
+  // Simpan data obat dan jadwal ke Supabase.
+  Future<void> _saveMedication() async {
+    if (_isSaving) return;
+
+    if (!_formKey.currentState!.validate()) return;
+
+    if (_schedules.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tambahkan minimal satu jam minum obat.')),
+      );
+      return;
+    }
+
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sesi login tidak ditemukan. Silakan login kembali.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    String? medicationId;
+
+    try {
+      // 1. Simpan data utama obat.
+      final medication = await supabase
+          .from('medications')
+          .insert({
+            'user_id': user.id,
+            'name': _nameController.text.trim(),
+            'dose': _doseController.text.trim(),
+            'days': _durationDays,
+          })
+          .select('id')
+          .single();
+
+      medicationId = medication['id'].toString();
+
+      // 2. Simpan jadwal minum obat.
+      final scheduleRows = _schedules.map((schedule) {
+        final timeParts = schedule.time.split('.');
+        final hour = timeParts[0].padLeft(2, '0');
+        final minute = timeParts.length > 1
+            ? timeParts[1].padLeft(2, '0')
+            : '00';
+
+        return <String, dynamic>{
+          'medication_id': medicationId,
+          'schedule_time': '$hour:$minute:00',
+          'meal_instruction': _selectedMealInstruction,
+          'is_active': true,
+        };
+      }).toList();
+
+      await supabase.from('medication_schedules').insert(scheduleRows);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Jadwal obat berhasil disimpan.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      Navigator.pop(context, true);
+    } catch (error) {
+      // Bersihkan data obat jika penyimpanan jadwal gagal.
+      if (medicationId != null) {
+        try {
+          await supabase.from('medications').delete().eq('id', medicationId);
+        } catch (rollbackError) {
+          debugPrint(
+            'Gagal membersihkan data obat setelah error: $rollbackError',
+          );
+        }
+      }
+
+      debugPrint('Gagal menyimpan jadwal obat: $error');
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal menyimpan obat: $error'),
+          duration: const Duration(seconds: 6),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
   Widget _buildSaveButton() {
     return SizedBox(
       width: double.infinity,
       height: 52,
       child: ElevatedButton.icon(
-        onPressed: () {
-          if (_formKey.currentState!.validate()) {
-            // TODO: Simpan data ke Supabase
-            print('Nama: ${_nameController.text}');
-            print('Dosis: ${_doseController.text}');
-            print('Frekuensi: $_selectedFrequency');
-            print('Jadwal: $_schedules');
-            print('Durasi: $_durationDays hari');
-            print('Instruksi: $_selectedMealInstruction');
-          }
-        },
-        icon: const Icon(Icons.check_circle_outline, size: 20),
-        label: const Text(
-          'SIMPAN OBAT',
-          style: TextStyle(
+        onPressed: _isSaving ? null : _saveMedication,
+        icon: _isSaving
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Icon(Icons.check_circle_outline, size: 20),
+        label: Text(
+          _isSaving ? 'MENYIMPAN...' : 'SIMPAN OBAT',
+          style: const TextStyle(
             fontFamily: 'PlusJakartaSans',
             fontSize: 16,
             fontWeight: FontWeight.w700,
@@ -567,7 +703,11 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          disabledBackgroundColor: AppColors.primary.withOpacity(0.65),
+          disabledForegroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           elevation: 0,
         ),
       ),
@@ -587,9 +727,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// DATA MODELS
-// ═══════════════════════════════════════════════════════════════
+// DATA MODEL
 
 class ScheduleTime {
   final String label;
@@ -611,9 +749,7 @@ class ScheduleTime {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// HELPER WIDGETS (Private - hanya untuk screen ini)
-// ═══════════════════════════════════════════════════════════════
+// HELPER WIDGET: FREKUENSI
 
 class _FrequencyOption extends StatelessWidget {
   final String label;
@@ -640,7 +776,9 @@ class _FrequencyOption extends StatelessWidget {
           color: _isSelected ? AppColors.lightBlue : Colors.white,
           borderRadius: BorderRadius.circular(25),
           border: Border.all(
-            color: _isSelected ? AppColors.primary : AppColors.lightBlue.withOpacity(0.5),
+            color: _isSelected
+                ? AppColors.primary
+                : AppColors.lightBlue.withOpacity(0.5),
             width: _isSelected ? 1.5 : 1,
           ),
         ),
@@ -654,7 +792,9 @@ class _FrequencyOption extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: _isSelected ? AppColors.primary : Colors.white,
                 border: Border.all(
-                  color: _isSelected ? AppColors.primary : AppColors.grey.withOpacity(0.4),
+                  color: _isSelected
+                      ? AppColors.primary
+                      : AppColors.grey.withOpacity(0.4),
                 ),
               ),
               child: _isSelected
@@ -678,6 +818,8 @@ class _FrequencyOption extends StatelessWidget {
   }
 }
 
+// HELPER WIDGET: JADWAL WAKTU
+
 class _ScheduleTimeItem extends StatelessWidget {
   final ScheduleTime schedule;
   final ValueChanged<String> onTimeChanged;
@@ -690,9 +832,15 @@ class _ScheduleTimeItem extends StatelessWidget {
   });
 
   IconData _getIcon() {
-    if (schedule.label.toLowerCase().contains('pagi')) return Icons.wb_sunny_outlined;
-    if (schedule.label.toLowerCase().contains('siang')) return Icons.wb_sunny;
-    if (schedule.label.toLowerCase().contains('malam')) return Icons.nightlight_round;
+    if (schedule.label.toLowerCase().contains('pagi')) {
+      return Icons.wb_sunny_outlined;
+    }
+    if (schedule.label.toLowerCase().contains('siang')) {
+      return Icons.wb_sunny;
+    }
+    if (schedule.label.toLowerCase().contains('malam')) {
+      return Icons.nightlight_round;
+    }
     return Icons.access_time;
   }
 
@@ -736,8 +884,12 @@ class _ScheduleTimeItem extends StatelessWidget {
                       context: context,
                       initialTime: _parseTime(schedule.time),
                     );
+
                     if (picked != null) {
-                      final formatted = '${picked.hour.toString().padLeft(2, '0')}.${picked.minute.toString().padLeft(2, '0')}';
+                      final formatted =
+                          '${picked.hour.toString().padLeft(2, '0')}.'
+                          '${picked.minute.toString().padLeft(2, '0')}';
+
                       onTimeChanged(formatted);
                     }
                   },
@@ -753,7 +905,11 @@ class _ScheduleTimeItem extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Icon(Icons.access_time, color: AppColors.grey, size: 16),
+                      const Icon(
+                        Icons.access_time,
+                        color: AppColors.grey,
+                        size: 16,
+                      ),
                     ],
                   ),
                 ),
@@ -790,12 +946,11 @@ class _ScheduleTimeItem extends StatelessWidget {
 
   TimeOfDay _parseTime(String time) {
     final parts = time.split('.');
-    return TimeOfDay(
-      hour: int.parse(parts[0]),
-      minute: int.parse(parts[1]),
-    );
+    return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
   }
 }
+
+// HELPER WIDGET: INSTRUKSI MAKAN
 
 class _MealToggle extends StatelessWidget {
   final String label;
@@ -819,7 +974,9 @@ class _MealToggle extends StatelessWidget {
             color: isSelected ? AppColors.primary : Colors.white,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isSelected ? AppColors.primary : AppColors.grey.withOpacity(0.3),
+              color: isSelected
+                  ? AppColors.primary
+                  : AppColors.grey.withOpacity(0.3),
             ),
           ),
           child: Text(
@@ -838,14 +995,13 @@ class _MealToggle extends StatelessWidget {
   }
 }
 
+// HELPER WIDGET: PRATINJAU PENGINGAT
+
 class _PreviewTimelineItem extends StatelessWidget {
   final String time;
   final String meal;
 
-  const _PreviewTimelineItem({
-    required this.time,
-    required this.meal,
-  });
+  const _PreviewTimelineItem({required this.time, required this.meal});
 
   @override
   Widget build(BuildContext context) {
@@ -890,7 +1046,11 @@ class _PreviewTimelineItem extends StatelessWidget {
             ],
           ),
         ),
-        const Icon(Icons.notifications_outlined, color: AppColors.grey, size: 20),
+        const Icon(
+          Icons.notifications_outlined,
+          color: AppColors.grey,
+          size: 20,
+        ),
       ],
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../config/app_constant.dart';
 import '../widgets/profile_section.dart';
@@ -10,26 +11,83 @@ import '../../routes/app_routes.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  //warna tambahan untuk logout (tidak masuk ke theme)
   static const Color pinkLogout = Color(0xFFFFD6D6);
   static const Color logoutRed = Color(0xFFFF5252);
 
-  //data profil pengguna.
-  String _userName = 'Syifa Indah';
-  String _userEmail = 'indah15@gmail.com';
+  // Data profil dari Supabase.
+  String _userName = 'Memuat profil...';
+  bool _isLoadingProfile = true;
+  bool _isSavingProfile = false;
 
-  //pengaturan pengingat.
+  String get _userEmail =>
+      Supabase.instance.client.auth.currentUser?.email ?? '';
+
   bool _obatReminder = true;
   bool _makanReminder = true;
   bool _suaraGetar = true;
 
-  //tab riwayat: 0 = Obat, 1 = Makan.
   int _selectedHistoryTab = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  // Mengambil nama pengguna dari tabel users.
+  Future<void> _loadProfile() async {
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+
+    if (user == null) {
+      if (!mounted) return;
+
+      setState(() {
+        _userName = 'Pengguna';
+        _isLoadingProfile = false;
+      });
+      return;
+    }
+
+    try {
+      final profile = await supabase
+          .from('users')
+          .select('name')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      if (!mounted) return;
+
+      final databaseName = profile?['name'] as String?;
+      final fallbackName = user.email?.split('@').first ?? 'Pengguna';
+
+      setState(() {
+        _userName = databaseName != null && databaseName.trim().isNotEmpty
+            ? databaseName.trim()
+            : fallbackName;
+        _isLoadingProfile = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _userName = user.email?.split('@').first ?? 'Pengguna';
+        _isLoadingProfile = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profil gagal dimuat dari database.')),
+      );
+
+      debugPrint('Gagal memuat profil: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +101,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         titleSpacing: 16,
         title: _buildHeader(),
       ),
-
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -65,17 +122,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ),
-
       bottomNavigationBar: _buildBottomNav(),
     );
   }
 
-  //header
+  // Header aplikasi.
   Widget _buildHeader() {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Logo Bulat Biru dengan Icon Tas Medis Putih
         Container(
           padding: const EdgeInsets.all(
             8,
@@ -84,7 +139,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: AppColors.primary,
             shape: BoxShape.circle,
             boxShadow: [
-              // Tambahan shadow halus agar tidak terlihat "basic/flat"
               BoxShadow(
                 color: AppColors.primary,
                 blurRadius: 8,
@@ -95,19 +149,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: const Icon(
             Icons.medical_services,
             color: AppColors.white,
-            size: 20, // Icon diperbesar sedikit
+            size: 20,
           ),
         ),
         const SizedBox(width: 10),
-        // Tulisan SAJAGA sebagai Brand Logo
         const Text(
-          "SAJAGA",
+          'SAJAGA',
           style: TextStyle(
             fontFamily: 'PlusJakartaSans', // Memastikan font sesuai config
             fontWeight:
                 FontWeight.w800, // Extra Bold agar terlihat seperti Logo
             color: AppColors.primary,
-            fontSize: 20, // Sedikit lebih besar
+            fontSize: 20,
             letterSpacing: 0.5,
           ),
         ),
@@ -115,7 +168,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  //profile card
+  // Kartu profil pengguna.
   Widget _buildProfileCard() {
     return Container(
       width: double.infinity,
@@ -140,13 +193,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
               ),
-
-              //tombol edit profil.
               Positioned(
                 bottom: 0,
                 right: 0,
                 child: GestureDetector(
-                  onTap: _showEditProfileDialog,
+                  onTap: _isLoadingProfile ? null : _showEditProfileDialog,
                   child: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
@@ -164,22 +215,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ],
           ),
-
           const SizedBox(height: 12),
-
           Text(
             _userName,
+            textAlign: TextAlign.center,
             style: const TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: 16,
               color: AppColors.navy,
             ),
           ),
-
           const SizedBox(height: 4),
-
           Text(
-            _userEmail,
+            _userEmail.isNotEmpty ? _userEmail : 'Email tidak tersedia',
             style: const TextStyle(
               fontWeight: FontWeight.w400,
               fontSize: 12,
@@ -191,38 +239,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  //reminder section
+  // Pengaturan pengingat.
   Widget _buildReminderSection() {
     return ProfileSection(
-      title: "Pengaturan Pengingat",
+      title: 'Pengaturan Pengingat',
       icon: Icons.notifications_active_outlined,
       child: Column(
         children: [
           ReminderTile(
-            title: "Pengingat Jadwal Obat",
-            subtitle: "Alarm tepat waktu sebelum & sesudah makan",
+            title: 'Pengingat Jadwal Obat',
+            subtitle: 'Alarm tepat waktu sebelum & sesudah makan',
             value: _obatReminder,
             onChanged: (val) {
               setState(() => _obatReminder = val);
             },
           ),
-
           const SizedBox(height: 8),
-
           ReminderTile(
-            title: "Pengingat Jadwal Makan",
-            subtitle: "Pemberitahuan pola makan ramah lambung",
+            title: 'Pengingat Jadwal Makan',
+            subtitle: 'Pemberitahuan pola makan ramah lambung',
             value: _makanReminder,
             onChanged: (val) {
               setState(() => _makanReminder = val);
             },
           ),
-
           const SizedBox(height: 8),
-
           ReminderTile(
-            title: "Suara Keras & Getar",
-            subtitle: "Memastikan alarm terdengar jelas di saku",
+            title: 'Suara Keras & Getar',
+            subtitle: 'Memastikan alarm terdengar jelas di saku',
             value: _suaraGetar,
             onChanged: (val) {
               setState(() => _suaraGetar = val);
@@ -232,13 +276,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
-  //histori section
 
+  // Bagian riwayat.
   Widget _buildHistorySection() {
     return ProfileSection(
-      title: "Riwayat Terpadu",
+      title: 'Riwayat Terpadu',
       icon: Icons.history,
-      actionText: "Lihat Semua",
+      actionText: 'Lihat Semua',
       onActionTap: () {
         Navigator.push(
           context,
@@ -255,7 +299,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  //histori tab
   Widget _buildHistoryTab() {
     return Container(
       decoration: BoxDecoration(
@@ -310,75 +353,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  //histori item
+  // Data riwayat contoh.
   List<Widget> _getHistoryItems() {
     if (_selectedHistoryTab == 0) {
       return [
         HistoryItemCard(
           icon: Icons.medication,
-          title: "Paracetamol",
-          subtitle: "Hari ini • 08:05 WIB",
-          status: "Diminum",
+          title: 'Paracetamol',
+          subtitle: 'Hari ini ΓÇó 08:05 WIB',
+          status: 'Diminum',
           isSuccess: true,
         ),
-
         const SizedBox(height: 8),
-
         HistoryItemCard(
           icon: Icons.medication,
-          title: "Vitamin C 500mg",
-          subtitle: "Kemarin • 20:00 WIB",
-          status: "Diminum",
-          isSuccess: true,
-        ),
-      ];
-    } else {
-      return [
-        HistoryItemCard(
-          icon: Icons.wb_sunny,
-          title: "Sarapan Pagi",
-          subtitle: "Hari ini • 07:15 WIB",
-          status: "Selesai",
-          isSuccess: true,
-        ),
-
-        const SizedBox(height: 8),
-        HistoryItemCard(
-          icon: Icons.wb_sunny,
-          title: "Makan Siang",
-          subtitle: "Hari ini • 12:30 WIB",
-          status: "Selesai",
+          title: 'Vitamin C 500mg',
+          subtitle: 'Kemarin ΓÇó 20:00 WIB',
+          status: 'Diminum',
           isSuccess: true,
         ),
       ];
     }
+
+    return [
+      HistoryItemCard(
+        icon: Icons.wb_sunny,
+        title: 'Sarapan Pagi',
+        subtitle: 'Hari ini ΓÇó 07:15 WIB',
+        status: 'Selesai',
+        isSuccess: true,
+      ),
+      const SizedBox(height: 8),
+      HistoryItemCard(
+        icon: Icons.wb_sunny,
+        title: 'Makan Siang',
+        subtitle: 'Hari ini ΓÇó 12:30 WIB',
+        status: 'Selesai',
+        isSuccess: true,
+      ),
+    ];
   }
 
-  //help section
+  // Bantuan dan dukungan.
   Widget _buildHelpSection() {
     return ProfileSection(
-      title: "Bantuan & Dukungan",
+      title: 'Bantuan & Dukungan',
       child: Column(
         children: [
           ProfileMenuTile(
             icon: Icons.help_outline,
-            title: "Pusat Bantuan & FAQ",
-            subtitle: "Panduan penggunaan & pertanyaan",
+            title: 'Pusat Bantuan & FAQ',
+            subtitle: 'Panduan penggunaan & pertanyaan',
           ),
-
           const SizedBox(height: 8),
-
           ProfileMenuTile(
             icon: Icons.phone_outlined,
-            title: "Hubungi Layanan Pengguna",
-            subtitle: "Kontak bantuan & tanggapan respon",
+            title: 'Hubungi Layanan Pengguna',
+            subtitle: 'Kontak bantuan & tanggapan respon',
           ),
         ],
       ),
     );
   }
 
-  //logout button
+  // Tombol logout.
   Widget _buildLogoutButton() {
     return SizedBox(
       width: double.infinity,
@@ -395,20 +433,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onPressed: () {
           showDialog(
             context: context,
-            builder: (context) => AlertDialog(
+            builder: (dialogContext) => AlertDialog(
               backgroundColor: AppColors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
               title: const Text(
-                "Keluar Akun",
+                'Keluar Akun',
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   color: AppColors.navy,
                 ),
               ),
               content: const Text(
-                "Apakah Anda yakin ingin keluar dari aplikasi?",
+                'Apakah Anda yakin ingin keluar dari aplikasi?',
                 style: TextStyle(
                   fontWeight: FontWeight.w400,
                   color: AppColors.grey,
@@ -416,9 +454,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => Navigator.pop(dialogContext),
                   child: const Text(
-                    "Batal",
+                    'Batal',
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
                       color: AppColors.grey,
@@ -430,11 +468,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     backgroundColor: logoutRed,
                     foregroundColor: AppColors.white,
                   ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    // TODO:
-                    // Tambahkan navigasi logout
-                    // ke halaman login.
+                  onPressed: () async {
+                    Navigator.pop(dialogContext);
+
+                    try {
+                      await Supabase.instance.client.auth.signOut();
+
+                      if (!mounted) return;
+
+                      Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        AppRoutes.login,
+                        (route) => false,
+                      );
+                    } catch (e) {
+                      if (!mounted) return;
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Gagal logout: $e')),
+                      );
+                    }
                   },
                   child: const Text(
                     "Keluar",
@@ -454,13 +507,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  //footer
+  // Footer.
   Widget _buildFooter() {
     return const Center(
       child: Column(
         children: [
           Text(
-            "SAJAGA App v1.2.0",
+            'SAJAGA App v1.2.0',
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w400,
@@ -480,8 +533,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
-  //bottom navigation
 
+  // Navigasi bawah.
   Widget _buildBottomNav() {
     return BottomNavigationBar(
       currentIndex: 1,
@@ -506,90 +559,169 @@ class _ProfileScreenState extends State<ProfileScreen> {
         BottomNavigationBarItem(
           icon: Icon(Icons.home_outlined),
           activeIcon: Icon(Icons.home),
-          label: 'Beranda',
+          label: "Beranda",
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.person_outline),
           activeIcon: Icon(Icons.person),
-          label: 'Profil',
+          label: "Profil",
         ),
       ],
     );
   }
 
-  //logic helpers
+  // Inisial avatar.
   String _getInitials(String name) {
     final parts = name.trim().split(RegExp(r'\s+'));
+
     if (parts.isEmpty || parts.first.isEmpty) {
       return '?';
     }
+
     if (parts.length >= 2) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
+
     return parts[0][0].toUpperCase();
   }
 
-  //edit profil
+  // Dialog edit profil dan penyimpanan nama ke Supabase.
   void _showEditProfileDialog() {
     final nameController = TextEditingController(text: _userName);
+    bool saving = false;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Edit Profil',
-          style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.navy),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              style: const TextStyle(
-                fontWeight: FontWeight.w400,
-                color: AppColors.navy,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: AppColors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Edit Profil',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: AppColors.navy,
+            ),
+          ),
+          content: TextField(
+            controller: nameController,
+            autofocus: true,
+            maxLength: 100,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(
+              labelText: 'Nama Lengkap',
+              hintText: 'Contoh: Mas Bayu',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: saving ? null : () => Navigator.pop(dialogContext),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              decoration: const InputDecoration(
-                labelText: 'Nama Lengkap',
-                border: OutlineInputBorder(),
-              ),
+              onPressed: saving
+                  ? null
+                  : () async {
+                      final newName = nameController.text.trim();
+
+                      if (newName.isEmpty) {
+                        ScaffoldMessenger.of(this.context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Nama tidak boleh kosong.'),
+                          ),
+                        );
+                        return;
+                      }
+
+                      final supabase = Supabase.instance.client;
+                      final user = supabase.auth.currentUser;
+
+                      if (user == null) {
+                        ScaffoldMessenger.of(this.context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Silakan login kembali.'),
+                          ),
+                        );
+                        return;
+                      }
+
+                      setDialogState(() {
+                        saving = true;
+                      });
+
+                      try {
+                        final result = await supabase
+                            .from('users')
+                            .update({
+                              'name': newName,
+                              'updated_at': DateTime.now()
+                                  .toUtc()
+                                  .toIso8601String(),
+                            })
+                            .eq('id', user.id)
+                            .select('id, name')
+                            .maybeSingle();
+
+                        if (result == null) {
+                          throw Exception(
+                            'Profil tidak ditemukan atau akses update ditolak. '
+                            'Pastikan baris users sudah ada untuk akun ini.',
+                          );
+                        }
+
+                        if (!mounted) return;
+
+                        setState(() {
+                          _userName = result['name'] as String? ?? newName;
+                        });
+
+                        if (dialogContext.mounted) {
+                          Navigator.pop(dialogContext);
+                        }
+
+                        ScaffoldMessenger.of(this.context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Nama profil berhasil diperbarui!'),
+                          ),
+                        );
+                      } catch (e) {
+                        setDialogState(() {
+                          saving = false;
+                        });
+
+                        if (!mounted) return;
+
+                        ScaffoldMessenger.of(this.context).showSnackBar(
+                          SnackBar(content: Text('Gagal menyimpan nama: $e')),
+                        );
+                      }
+                    },
+              child: saving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.white,
+                      ),
+                    )
+                  : const Text(
+                      'Simpan',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Batal',
-              style: TextStyle(
-                fontWeight: FontWeight.w500,
-                color: AppColors.grey,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            onPressed: () {
-              setState(() {
-                if (nameController.text.trim().isNotEmpty) {
-                  _userName = nameController.text.trim();
-                }
-              });
-              Navigator.pop(context);
-            },
-            child: const Text(
-              'Simpan',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
       ),
     ).whenComplete(() {
       nameController.dispose();
