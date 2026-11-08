@@ -120,7 +120,7 @@ Klasifikasi Jadwal Obat dengan Pengingat Otomatis
       <img width="100" height="100" alt="Azzahra" src="https://ui-avatars.com/api/?name=Azzahra+Sri+W&background=0D8ABC&color=fff&size=100" />
       <br />
       <sub><b>Azzahra Sri Widodo Putri</b></sub>
-        <a href="https://github.com/putriazza44-dotcom">
+        <a href="https://github.com/putriazzara44-dotcom">
       <br />
         </a>
       <sub>NPM: 07352411066</sub>
