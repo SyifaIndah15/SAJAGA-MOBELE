@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../config/app_constant.dart';
 import '../../routes/app_routes.dart';
 import '../medication/add_medication_screen.dart';
+import '../../services/medication_service.dart';
+import '../widgets/medication_card.dart';
 
 const Color _pageBackground = Color(0xFFF4FAFD);
 const Color _borderColor = Color(0xFFE5EEF5);
@@ -22,10 +26,59 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String _userName = 'Pengguna';
 
+  final MedicationService _medicationService = MedicationService();
+  List<Map<String, dynamic>> _medicationSchedules = [];
+  bool _isLoadingMedications = true;
+  String? _medicationError;
+  Timer? _statusRefreshTimer;
+
   @override
   void initState() {
     super.initState();
     _loadUserName();
+    _loadTodayMedications();
+
+    // Perbarui status waktu secara berkala tanpa mengambil ulang data Supabase.
+    _statusRefreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted && _medicationSchedules.isNotEmpty) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _statusRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadTodayMedications() async {
+    if (mounted) {
+      setState(() {
+        _isLoadingMedications = true;
+        _medicationError = null;
+      });
+    }
+
+    try {
+      final schedules = await _medicationService.getTodaySchedules();
+
+      if (!mounted) return;
+
+      setState(() {
+        _medicationSchedules = schedules;
+        _isLoadingMedications = false;
+      });
+    } catch (e) {
+      debugPrint('Gagal mengambil jadwal obat: $e');
+
+      if (!mounted) return;
+
+      setState(() {
+        _medicationError = e.toString();
+        _isLoadingMedications = false;
+      });
+    }
   }
 
   Future<void> _loadUserName() async {
@@ -98,14 +151,18 @@ class _HomeScreenState extends State<HomeScreen> {
                             subtitle: 'Jadwal baru',
                             iconColor: AppColors.primary,
                             iconBackground: AppColors.lightBlue,
-                            onTap: () {
-                              Navigator.push(
+                            onTap: () async {
+                              final result = await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) =>
                                       const AddMedicationScreen(),
                                 ),
                               );
+
+                              if (result == true && mounted) {
+                                await _loadTodayMedications();
+                              }
                             },
                           ),
                         ),
@@ -125,28 +182,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                     const SizedBox(height: 18),
-                    const _SectionHeading(
+                    _SectionHeading(
                       title: 'Obat Hari Ini',
-                      trailing: '0 Terjadwal',
+                      trailing: _isLoadingMedications
+                          ? 'Memuat...'
+                          : '${_medicationSchedules.length} Terjadwal',
                     ),
                     const SizedBox(height: 8),
-                    Container(
-                      width: double.infinity,
-                      height: 43,
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: _borderColor),
-                      ),
-                      alignment: Alignment.center,
-                      child: const Text(
-                        'Belum Ada Jadwal Obat Hari Ini',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFF334155),
-                        ),
-                      ),
-                    ),
+                    _buildTodayMedicationContent(),
                     const SizedBox(height: 18),
                     _RecommendationCard(
                       onRecommendationTap: () => _showPrototypeMessage(
@@ -167,7 +210,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 8),
                     Container(
                       width: double.infinity,
-                      height: 112,
+                      height: 118,
                       decoration: BoxDecoration(
                         color: AppColors.white,
                         borderRadius: BorderRadius.circular(16),
@@ -194,7 +237,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           const Text(
                             'Belum Ada Rutinitas Terjadwal',
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: 11,
                               color: Color(0xFF334155),
                             ),
                           ),
@@ -219,10 +262,162 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildTodayMedicationContent() {
+    if (_isLoadingMedications) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _borderColor),
+        ),
+        child: const Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+
+    if (_medicationError != null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _borderColor),
+        ),
+        child: Column(
+          children: [
+            const Text(
+              'Jadwal obat belum dapat dimuat.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: Color(0xFF334155)),
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: _loadTodayMedications,
+              icon: const Icon(Icons.refresh, size: 17),
+              label: const Text('Coba lagi'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_medicationSchedules.isEmpty) {
+      return Container(
+        width: double.infinity,
+        height: 68,
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _borderColor),
+        ),
+        alignment: Alignment.center,
+        child: const Text(
+          'Belum Ada Jadwal Obat Hari Ini',
+          style: TextStyle(fontSize: 13, color: Color(0xFF334155)),
+        ),
+      );
+    }
+
+    return Column(
+      children: _medicationSchedules.map((schedule) {
+        return _buildMedicationCard(schedule);
+      }).toList(),
+    );
+  }
+
+  // Mengubah data jadwal dari MedicationService menjadi MedicationCard.
+  Widget _buildMedicationCard(Map<String, dynamic> schedule) {
+    final rawTime = schedule['schedule_time']?.toString() ?? '';
+    final timeParts = rawTime.split(':');
+
+    final hour = timeParts.isNotEmpty ? int.tryParse(timeParts[0]) ?? 0 : 0;
+    final minute = timeParts.length > 1 ? int.tryParse(timeParts[1]) ?? 0 : 0;
+
+    final now = DateTime.now();
+    final scheduledTime = DateTime(now.year, now.month, now.day, hour, minute);
+
+    final elapsedSinceSchedule = now.difference(scheduledTime);
+
+    // Aturan waktu:
+    // - Sebelum jadwal: upcoming.
+    // - 00:00 sampai sebelum 05:00 setelah jadwal: ready.
+    // - 05:00 sampai sebelum 60:00 setelah jadwal: late.
+    // - 60:00 atau lebih setelah jadwal: missed.
+    final MedicationStatus status;
+    if (elapsedSinceSchedule.isNegative) {
+      status = MedicationStatus.upcoming;
+    } else if (elapsedSinceSchedule < const Duration(minutes: 5)) {
+      status = MedicationStatus.ready;
+    } else if (elapsedSinceSchedule < const Duration(hours: 1)) {
+      status = MedicationStatus.late;
+    } else {
+      status = MedicationStatus.missed;
+    }
+
+    final lateMinutes = elapsedSinceSchedule.isNegative
+        ? 0
+        : elapsedSinceSchedule.inMinutes;
+
+    final String timeLabel;
+    if (hour >= 5 && hour < 12) {
+      timeLabel = 'Pagi';
+    } else if (hour >= 12 && hour < 15) {
+      timeLabel = 'Siang';
+    } else if (hour >= 15 && hour < 18) {
+      timeLabel = 'Sore';
+    } else {
+      timeLabel = 'Malam';
+    }
+
+    final medicationName = schedule['medication_name']?.toString() ?? 'Obat';
+    final medicationDose = schedule['medication_dose']?.toString() ?? '';
+    final mealInstruction = schedule['meal_instruction']?.toString() ?? '';
+
+    final dosage = [
+      medicationDose,
+      if (mealInstruction.isNotEmpty) mealInstruction,
+    ].where((value) => value.trim().isNotEmpty).join(' • ');
+
+    return MedicationCard(
+      time:
+          '${hour.toString().padLeft(2, '0')}:'
+          '${minute.toString().padLeft(2, '0')}',
+      timeLabel: timeLabel,
+      medicationName: medicationName,
+      dosage: dosage,
+      status: status,
+      lateMinutes: status == MedicationStatus.late ? lateMinutes : null,
+      onTapCheck: () {
+        _showPrototypeMessage(
+          'Pencatatan obat diminum belum terhubung ke database.',
+        );
+      },
+      onTapMinumSekarang: () {
+        _showPrototypeMessage(
+          'Pencatatan obat diminum belum terhubung ke database.',
+        );
+      },
+      onTapAturJadwal: () {
+        _showPrototypeMessage('Pengaturan ulang jadwal belum terhubung.');
+      },
+      onTapAturUlang: () {
+        _showPrototypeMessage('Pengaturan ulang jadwal belum terhubung.');
+      },
+    );
+  }
+
   Widget _buildPinnedHeader() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(bottom: BorderSide(color: Color(0xFFEAF3F8), width: 1)),
@@ -257,6 +452,24 @@ class _HomeScreenState extends State<HomeScreen> {
               letterSpacing: -0.35,
             ),
           ),
+          const Spacer(),
+          Material(
+            color: AppColors.lightBlue,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: () => Navigator.pushNamed(context, AppRoutes.profile),
+              child: const SizedBox(
+                width: 38,
+                height: 38,
+                child: Icon(
+                  Icons.person_outline,
+                  color: AppColors.primary,
+                  size: 21,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -272,6 +485,8 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Text(
                 'Halo, $_userName 👋',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
@@ -288,17 +503,17 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         Container(
-          width: 34,
-          height: 34,
+          width: 38,
+          height: 38,
           decoration: const BoxDecoration(
             color: AppColors.lightBlue,
             shape: BoxShape.circle,
           ),
           alignment: Alignment.center,
           child: const Icon(
-            Icons.person_outline,
+            Icons.health_and_safety_outlined,
             color: AppColors.primary,
-            size: 20,
+            size: 22,
           ),
         ),
       ],
@@ -354,7 +569,7 @@ class _QuickActionCardState extends State<_QuickActionCard> {
             borderRadius: BorderRadius.circular(15),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 130),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
               decoration: BoxDecoration(
                 color: _hovered ? const Color(0xFFFCFEFF) : Colors.white,
                 borderRadius: BorderRadius.circular(15),
@@ -374,8 +589,8 @@ class _QuickActionCardState extends State<_QuickActionCard> {
               child: Row(
                 children: [
                   Container(
-                    width: 32,
-                    height: 32,
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
                       color: widget.iconBackground,
                       shape: BoxShape.circle,
@@ -394,7 +609,7 @@ class _QuickActionCardState extends State<_QuickActionCard> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 10,
+                            fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: AppColors.navy,
                           ),
@@ -405,7 +620,7 @@ class _QuickActionCardState extends State<_QuickActionCard> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 9,
+                            fontSize: 10,
                             color: _mutedText,
                           ),
                         ),
@@ -436,13 +651,13 @@ class _SectionHeading extends StatelessWidget {
           child: Text(
             title,
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: FontWeight.w700,
               color: AppColors.navy,
             ),
           ),
         ),
-        Text(trailing, style: const TextStyle(fontSize: 9, color: _mutedText)),
+        Text(trailing, style: const TextStyle(fontSize: 10, color: _mutedText)),
       ],
     );
   }

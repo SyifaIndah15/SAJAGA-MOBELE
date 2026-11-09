@@ -832,37 +832,73 @@ class _ScheduleTimeItem extends StatelessWidget {
   });
 
   IconData _getIcon() {
-    if (schedule.label.toLowerCase().contains('pagi')) {
-      return Icons.wb_sunny_outlined;
-    }
-    if (schedule.label.toLowerCase().contains('siang')) {
-      return Icons.wb_sunny;
-    }
-    if (schedule.label.toLowerCase().contains('malam')) {
-      return Icons.nightlight_round;
-    }
+    final label = schedule.label.toLowerCase();
+    if (label.contains('pagi')) return Icons.wb_sunny_outlined;
+    if (label.contains('siang')) return Icons.wb_sunny_outlined;
+    if (label.contains('malam')) return Icons.nightlight_round;
     return Icons.access_time;
+  }
+
+  Color _getIconColor() {
+    return schedule.label.toLowerCase().contains('malam')
+        ? const Color(0xFF6976A8)
+        : AppColors.primary;
+  }
+
+  Future<void> _selectTime(BuildContext context) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _parseTime(schedule.time),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+                  primary: AppColors.primary,
+                  onPrimary: Colors.white,
+                  surface: Colors.white,
+                  onSurface: AppColors.navy,
+                ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      final formatted =
+          '${picked.hour.toString().padLeft(2, '0')}.'
+          '${picked.minute.toString().padLeft(2, '0')}';
+      onTimeChanged(formatted);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.lightBlue.withOpacity(0.5)),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppColors.lightBlue.withOpacity(0.55),
+        ),
       ),
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
-            decoration: const BoxDecoration(
-              color: AppColors.lightBlue,
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: schedule.label.toLowerCase().contains('malam')
+                  ? const Color(0xFFF0F0FA)
+                  : AppColors.lightBlue,
               shape: BoxShape.circle,
             ),
-            child: Icon(_getIcon(), color: AppColors.primary, size: 20),
+            child: Icon(
+              _getIcon(),
+              color: _getIconColor(),
+              size: 18,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -873,70 +909,87 @@ class _ScheduleTimeItem extends StatelessWidget {
                   schedule.label,
                   style: const TextStyle(
                     fontFamily: 'PlusJakartaSans',
-                    fontSize: 12,
+                    fontSize: 11,
                     color: AppColors.grey,
                   ),
                 ),
                 const SizedBox(height: 4),
-                GestureDetector(
-                  onTap: () async {
-                    final TimeOfDay? picked = await showTimePicker(
-                      context: context,
-                      initialTime: _parseTime(schedule.time),
-                    );
-
-                    if (picked != null) {
-                      final formatted =
-                          '${picked.hour.toString().padLeft(2, '0')}.'
-                          '${picked.minute.toString().padLeft(2, '0')}';
-
-                      onTimeChanged(formatted);
-                    }
-                  },
-                  child: Row(
-                    children: [
-                      Text(
-                        schedule.time,
-                        style: const TextStyle(
-                          fontFamily: 'PlusJakartaSans',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.navy,
+                InkWell(
+                  onTap: () => _selectTime(context),
+                  borderRadius: BorderRadius.circular(7),
+                  child: Container(
+                    constraints: const BoxConstraints(
+                      minWidth: 76,
+                      minHeight: 34,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(
+                        color: AppColors.grey.withOpacity(0.35),
+                      ),
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          schedule.time,
+                          style: const TextStyle(
+                            fontFamily: 'PlusJakartaSans',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.navy,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(
-                        Icons.access_time,
-                        color: AppColors.grey,
-                        size: 16,
-                      ),
-                    ],
+                        const SizedBox(width: 5),
+                        const Icon(
+                          Icons.access_time,
+                          size: 13,
+                          color: AppColors.primary,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 9,
+              vertical: 5,
+            ),
             decoration: BoxDecoration(
-              color: AppColors.lightBlue,
-              borderRadius: BorderRadius.circular(8),
+              color: AppColors.lightBlue.withOpacity(0.75),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
               schedule.tag,
               style: const TextStyle(
                 fontFamily: 'PlusJakartaSans',
-                fontSize: 11,
+                fontSize: 9,
                 fontWeight: FontWeight.w700,
                 color: AppColors.primary,
               ),
             ),
           ),
           if (onRemove != null) ...[
-            const SizedBox(width: 8),
-            GestureDetector(
+            const SizedBox(width: 7),
+            InkWell(
               onTap: onRemove,
-              child: const Icon(Icons.close, color: AppColors.grey, size: 20),
+              borderRadius: BorderRadius.circular(20),
+              child: const Padding(
+                padding: EdgeInsets.all(4),
+                child: Icon(
+                  Icons.close,
+                  color: AppColors.grey,
+                  size: 17,
+                ),
+              ),
             ),
           ],
         ],
@@ -946,7 +999,10 @@ class _ScheduleTimeItem extends StatelessWidget {
 
   TimeOfDay _parseTime(String time) {
     final parts = time.split('.');
-    return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+    return TimeOfDay(
+      hour: int.parse(parts[0]),
+      minute: parts.length > 1 ? int.parse(parts[1]) : 0,
+    );
   }
 }
 
