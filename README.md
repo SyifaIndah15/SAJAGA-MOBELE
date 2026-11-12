@@ -24,8 +24,7 @@ Dengan adanya SAJAGA, pengguna dapat mengelola jadwal kesehatan secara lebih ter
 
 </td>
 <td width="40%">
-   
-<img width="320" height="182" alt="SAJAGA App Preview" src="<img width="720" height="720" alt="anuhaha" src="https://github.com/user-attachments/assets/b500d2ab-ba0b-460d-9884-80ad717f22a2" />
+<img width="720" height="720" alt="anuhaha" src="https://github.com/user-attachments/assets/b500d2ab-ba0b-460d-9884-80ad717f22a2"
 " />
 
 **SISTEM PERSEDIAAN OBAT & MAKANAN**  
