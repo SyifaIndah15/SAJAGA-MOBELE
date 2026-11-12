@@ -141,14 +141,12 @@ Klasifikasi Jadwal Obat dengan Pengingat Otomatis
   </tr>
 </table>
 
----
-
 ## 🚀 Cara Menjalankan Aplikasi
 
 ### Prasyarat
 - Flutter SDK (versi 3.0 atau lebih tinggi)
 - Dart SDK
-- Android Studio / VS Code
+- VS Code
 - Emulator atau device fisik
 
 ### Langkah-langkah Instalasi
