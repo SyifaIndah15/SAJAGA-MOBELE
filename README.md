@@ -112,9 +112,9 @@ Klasifikasi Jadwal Obat dengan Pengingat Otomatis
       <sub><b>Falisha Putri Darsono</b></sub>
        </a>
       <br />
-      <sub>NIM: 07352411039</sub>
+      <sub>NPM: 07352411039</sub>
       <br />
-      <sub>Front End Developer</sub>
+      <sub>FE Developer</sub>
     </td>
     <td align="center">
       <img width="100" height="100" alt="Azzahra" src="https://ui-avatars.com/api/?name=Azzahra+Sri+W&background=0D8ABC&color=fff&size=100" />
@@ -132,7 +132,7 @@ Klasifikasi Jadwal Obat dengan Pengingat Otomatis
       <br />
       <sub><b>Bayu Cahyo Saputra</b></sub>
       <br />
-      <sub>NIM: 07352411074</sub>
+      <sub>NPM: 07352411074</sub>
       <br />
       <sub>Back End Developer</sub>
     </td>
