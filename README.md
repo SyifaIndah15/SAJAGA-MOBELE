@@ -79,7 +79,7 @@ Klasifikasi Jadwal Obat dengan Pengingat Otomatis
       <br />
       <sub>NPM: 07352411129</sub>
       <br />
-      <sub>Sistem Analis</sub>
+      <sub>Sistem Analiys</sub>
     </td>
     <td align="center">
       <img width="100" height="100" alt="Syifa" src="https://ui-avatars.com/api/?name=Syifa+Indah+Maulany&background=0D8ABC&color=fff&size=100" />
@@ -90,7 +90,7 @@ Klasifikasi Jadwal Obat dengan Pengingat Otomatis
       <br />
       <sub>NPM: 07352411012</sub>
       <br />
-      <sub>Sistem Analis</sub>
+      <sub>Sistem Analiys</sub>
     </td>
     <td align="center">
       <img width="100" height="100" alt="Muthia" src="https://ui-avatars.com/api/?name=Muthia+Sangadji&background=0D8ABC&color=fff&size=100" />
@@ -131,10 +131,12 @@ Klasifikasi Jadwal Obat dengan Pengingat Otomatis
       <img width="100" height="100" alt="Bayu" src="https://ui-avatars.com/api/?name=Bayu+Cahyo+S&background=0D8ABC&color=fff&size=100" />
       <br />
       <sub><b>Bayu Cahyo Saputra</b></sub>
+        <a href="https://github.com/bayucahyo-27">
+        </a>
       <br />
       <sub>NPM: 07352411074</sub>
       <br />
-      <sub>Back End Developer</sub>
+      <sub>BE Developer</sub>
     </td>
   </tr>
 </table>
