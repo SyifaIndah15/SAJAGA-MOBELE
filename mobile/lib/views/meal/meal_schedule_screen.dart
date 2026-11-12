@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+
 import '../widgets/meal_card.dart';
 import '../../config/app_constant.dart';
 import '../../utils/snackbar_helper.dart';
@@ -33,13 +34,21 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
         elevation: 0,
         centerTitle: false, // <-- Judul di kiri, bukan tengah
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppColors.navy, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios,
+            color: AppColors.navy,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.restaurant_menu, color: AppColors.primary, size: 22),
+            const Icon(
+              Icons.restaurant_menu,
+              color: AppColors.primary,
+              size: 22,
+            ),
             const SizedBox(width: 8),
             const Text(
               'Nutrisi & Jadwal',
@@ -59,7 +68,11 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
                 color: AppColors.primary,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.person_outline, color: AppColors.white, size: 20),
+              child: const Icon(
+                Icons.person_outline,
+                color: AppColors.white,
+                size: 20,
+              ),
             ),
             onPressed: () {
               // TODO: Nanti navigasi ke ProfileScreen
@@ -106,7 +119,8 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
                       _breakfastTime,
                       (newTime) => setState(() => _breakfastTime = newTime),
                     ),
-                    onToggleChanged: (value) => setState(() => _isBreakfastActive = value),
+                    onToggleChanged: (value) =>
+                        setState(() => _isBreakfastActive = value),
                   ),
                   const SizedBox(height: 12),
                   MealCard(
@@ -121,7 +135,8 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
                       _lunchTime,
                       (newTime) => setState(() => _lunchTime = newTime),
                     ),
-                    onToggleChanged: (value) => setState(() => _isLunchActive = value),
+                    onToggleChanged: (value) =>
+                        setState(() => _isLunchActive = value),
                   ),
                   const SizedBox(height: 12),
                   MealCard(
@@ -136,7 +151,8 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
                       _dinnerTime,
                       (newTime) => setState(() => _dinnerTime = newTime),
                     ),
-                    onToggleChanged: (value) => setState(() => _isDinnerActive = value),
+                    onToggleChanged: (value) =>
+                        setState(() => _isDinnerActive = value),
                   ),
                 ],
               ),
@@ -146,7 +162,10 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  SnackbarHelper.showSuccess(context, 'Pengaturan berhasil disimpan!');
+                  SnackbarHelper.showSuccess(
+                    context,
+                    'Pengaturan berhasil disimpan!',
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -185,7 +204,8 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
       ),
       builder: (context) {
-        return SingleChildScrollView( // <-- Bungkus dengan ini
+        return SingleChildScrollView(
+          // <-- Bungkus dengan ini
           child: StatefulBuilder(
             builder: (context, setModalState) {
               return Padding(
@@ -238,7 +258,11 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close, color: AppColors.grey, size: 20),
+                          icon: const Icon(
+                            Icons.close,
+                            color: AppColors.grey,
+                            size: 20,
+                          ),
                           onPressed: () => Navigator.pop(context),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
@@ -265,9 +289,10 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
                                 ),
                                 Expanded(
                                   child: CupertinoPicker(
-                                    scrollController: FixedExtentScrollController(
-                                      initialItem: tempTime.hour,
-                                    ),
+                                    scrollController:
+                                        FixedExtentScrollController(
+                                          initialItem: tempTime.hour,
+                                        ),
                                     itemExtent: 32, // Kurangi dari 36
                                     onSelectedItemChanged: (index) {
                                       setModalState(() {
@@ -315,9 +340,10 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
                                 ),
                                 Expanded(
                                   child: CupertinoPicker(
-                                    scrollController: FixedExtentScrollController(
-                                      initialItem: tempTime.minute,
-                                    ),
+                                    scrollController:
+                                        FixedExtentScrollController(
+                                          initialItem: tempTime.minute,
+                                        ),
                                     itemExtent: 32, // Kurangi dari 36
                                     onSelectedItemChanged: (index) {
                                       setModalState(() {
@@ -357,7 +383,11 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.info_outline, color: AppColors.primary, size: 18),
+                          const Icon(
+                            Icons.info_outline,
+                            color: AppColors.primary,
+                            size: 18,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -382,7 +412,9 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.secondary,
-                          padding: const EdgeInsets.symmetric(vertical: 12), // Kurangi dari 14
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                          ), // Kurangi dari 14
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12.0),
                           ),

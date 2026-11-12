@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+
 import '../../config/app_constant.dart';
+import '../../services/medication_service.dart';
 
 class DetailMedicationScreen extends StatefulWidget {
   final String medicationId;
   final String medicationName;
   final String dosage;
-  final String mealInstruction; // 'Sebelum Makan' atau 'Setelah Makan'
+  final String mealInstruction;
 
   const DetailMedicationScreen({
     super.key,
@@ -21,37 +23,130 @@ class DetailMedicationScreen extends StatefulWidget {
 
 class _DetailMedicationScreenState extends State<DetailMedicationScreen> {
   bool _isAlarmEnabled = true;
+  bool _isLoading = true;
+  String? _errorMessage;
+  List<DoseSchedule> _todaySchedules = [];
 
-  // Data dummy jadwal minum hari ini
-  final List<DoseSchedule> _todaySchedules = [
-    DoseSchedule(
-      id: '1',
-      time: '08.00',
-      timeLabel: 'Pagi',
-      doseLabel: 'Dosis 1',
-      doseInfo: '1 tablet (500mg)',
-      status: DoseStatus.taken,
-      takenTime: '08.05',
-    ),
-    DoseSchedule(
-      id: '2',
-      time: '14.00',
-      timeLabel: 'Siang',
-      doseLabel: 'Dosis 2',
-      doseInfo: '1 tablet (500mg)',
-      status: DoseStatus.upcoming,
-      hoursRemaining: 2,
-    ),
-    DoseSchedule(
-      id: '3',
-      time: '20.00',
-      timeLabel: 'Malam',
-      doseLabel: 'Dosis 3',
-      doseInfo: '1 tablet (500mg)',
-      status: DoseStatus.upcoming,
-      isTonight: true,
-    ),
-  ];
+  final MedicationService _medicationService = MedicationService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSchedules();
+  }
+
+  Future<void> _loadSchedules() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final data = await _medicationService.getMedicationSchedules(
+        widget.medicationId,
+      );
+
+      final now = DateTime.now();
+
+      final schedules = data.map((item) {
+        final rawTime = item['schedule_time'].toString();
+        final parts = rawTime.split(':');
+
+        final hour = int.parse(parts[0]);
+        final minute = int.parse(parts[1]);
+
+        final time = TimeOfDay(hour: hour, minute: minute);
+        final scheduledDateTime = DateTime(
+          now.year,
+          now.month,
+          now.day,
+          hour,
+          minute,
+        );
+
+        final difference = scheduledDateTime.difference(now);
+        final isReady = !difference.isNegative && difference.inMinutes <= 30;
+
+        final label = hour < 11
+            ? 'Pagi'
+            : hour < 15
+            ? 'Siang'
+            : hour < 18
+            ? 'Sore'
+            : 'Malam';
+
+        return DoseSchedule(
+          id: item['id'].toString(),
+          time:
+              '${hour.toString().padLeft(2, '0')}.${minute.toString().padLeft(2, '0')}',
+          timeLabel: label,
+          doseLabel: '',
+          doseInfo: widget.dosage,
+          mealInstruction: item['meal_instruction']?.toString() ?? '',
+          status: isReady ? DoseStatus.ready : DoseStatus.upcoming,
+          hoursRemaining: difference.isNegative ? 0 : difference.inHours,
+          isTonight: hour >= 18 || hour < 5,
+        );
+      }).toList();
+
+      // Beri nomor urut pada setiap jadwal.
+      for (int i = 0; i < schedules.length; i++) {
+        schedules[i] = schedules[i].copyWith(doseLabel: 'Dosis ${i + 1}');
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _todaySchedules = schedules;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: AppColors.background,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios, color: AppColors.navy, size: 20),
+        onPressed: () => Navigator.pop(context),
+      ),
+      title: Text(
+        'Detail Obat - ${widget.medicationName}',
+        style: const TextStyle(
+          fontFamily: 'PlusJakartaSans',
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: AppColors.navy,
+        ),
+      ),
+      centerTitle: true,
+      actions: [
+        IconButton(
+          icon: const Icon(
+            Icons.delete_outline,
+            color: AppColors.grey,
+            size: 22,
+          ),
+          onPressed: _showDeleteConfirmation,
+        ),
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: CircleAvatar(
+            backgroundColor: AppColors.lightBlue,
+            child: const Icon(Icons.person, color: AppColors.primary, size: 20),
+          ),
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,42 +176,6 @@ class _DetailMedicationScreenState extends State<DetailMedicationScreen> {
     );
   }
 
-  // ─── App Bar ───────────────────────────────────────────────
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: AppColors.background,
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: AppColors.navy, size: 20),
-        onPressed: () => Navigator.pop(context),
-      ),
-      title: Text(
-        'Detail Obat - ${widget.medicationName}',
-        style: const TextStyle(
-          fontFamily: 'PlusJakartaSans',
-          fontSize: 16,
-          fontWeight: FontWeight.w700,
-          color: AppColors.navy,
-        ),
-      ),
-      centerTitle: true,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.delete_outline, color: AppColors.grey, size: 22),
-          onPressed: _showDeleteConfirmation,
-        ),
-        Padding(
-          padding: const EdgeInsets.only(right: 16),
-          child: CircleAvatar(
-            backgroundColor: AppColors.lightBlue,
-            child: const Icon(Icons.person, color: AppColors.primary, size: 20),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ─── Medication Header ─────────────────────────────────────
   Widget _buildMedicationHeader() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -134,7 +193,11 @@ class _DetailMedicationScreenState extends State<DetailMedicationScreen> {
               color: AppColors.lightBlue,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(Icons.medication, color: AppColors.primary, size: 32),
+            child: const Icon(
+              Icons.medication,
+              color: AppColors.primary,
+              size: 32,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -143,7 +206,11 @@ class _DetailMedicationScreenState extends State<DetailMedicationScreen> {
               children: [
                 const Row(
                   children: [
-                    Icon(Icons.check_circle, color: AppColors.primary, size: 16),
+                    Icon(
+                      Icons.check_circle,
+                      color: AppColors.primary,
+                      size: 16,
+                    ),
                     SizedBox(width: 6),
                     Text(
                       'Jadwal Aktif Hari Ini',
@@ -183,7 +250,6 @@ class _DetailMedicationScreenState extends State<DetailMedicationScreen> {
     );
   }
 
-  // ─── Today's Schedule ──────────────────────────────────────
   Widget _buildTodayScheduleSection() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -205,22 +271,66 @@ class _DetailMedicationScreenState extends State<DetailMedicationScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          ..._todaySchedules.map((schedule) => Padding(
+          if (_isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (_errorMessage != null)
+            Column(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 30),
+                const SizedBox(height: 8),
+                Text(
+                  'Gagal memuat jadwal obat.',
+                  style: const TextStyle(
+                    color: AppColors.grey,
+                    fontFamily: 'PlusJakartaSans',
+                  ),
+                ),
+                TextButton(
+                  onPressed: _loadSchedules,
+                  child: const Text('Coba Lagi'),
+                ),
+              ],
+            )
+          else if (_todaySchedules.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'Belum ada jadwal minum obat.',
+                  style: TextStyle(
+                    color: AppColors.grey,
+                    fontFamily: 'PlusJakartaSans',
+                  ),
+                ),
+              ),
+            )
+          else
+            ..._todaySchedules.map(
+              (schedule) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _DoseScheduleItem(schedule: schedule),
-              )),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  // ─── Instruction Section ───────────────────────────────────
   Widget _buildInstructionSection() {
     final isBeforeMeal = widget.mealInstruction == 'Sebelum Makan';
+
     final instructionText = isBeforeMeal
         ? 'Minum 30 menit sebelum makan untuk penyerapan optimal.'
         : 'Minum 15-30 menit setelah sarapan atau makan siang untuk menjaga kenyamanan lambung.';
-    final instructionTitle = isBeforeMeal ? 'Sebelum Makan (Perut Kosong)' : 'Sesudah Makan (Perut Terisi)';
+
+    final instructionTitle = isBeforeMeal
+        ? 'Sebelum Makan (Perut Kosong)'
+        : 'Sesudah Makan (Perut Terisi)';
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -251,7 +361,11 @@ class _DetailMedicationScreenState extends State<DetailMedicationScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.restaurant, color: AppColors.primary, size: 24),
+                const Icon(
+                  Icons.restaurant,
+                  color: AppColors.primary,
+                  size: 24,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -286,7 +400,6 @@ class _DetailMedicationScreenState extends State<DetailMedicationScreen> {
     );
   }
 
-  // ─── Alarm Section ─────────────────────────────────────────
   Widget _buildAlarmSection() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -316,8 +429,6 @@ class _DetailMedicationScreenState extends State<DetailMedicationScreen> {
               setState(() {
                 _isAlarmEnabled = value;
               });
-              // TODO: Update status alarm di database
-              print('Alarm ${value ? 'diaktifkan' : 'dinonaktifkan'}');
             },
             activeColor: AppColors.primary,
           ),
@@ -326,23 +437,13 @@ class _DetailMedicationScreenState extends State<DetailMedicationScreen> {
     );
   }
 
-  // ─── Mark as Taken Button ──────────────────────────────────
   Widget _buildMarkAsTakenButton() {
-    // Cari dosis yang statusnya 'ready' (tepat waktu)
-    final readyDose = _todaySchedules.firstWhere(
-      (s) => s.status == DoseStatus.ready,
-      orElse: () => DoseSchedule(
-        id: '',
-        time: '',
-        timeLabel: '',
-        doseLabel: '',
-        doseInfo: '',
-        status: DoseStatus.upcoming,
-      ),
+    final readyDose = _todaySchedules.cast<DoseSchedule?>().firstWhere(
+      (s) => s?.status == DoseStatus.ready,
+      orElse: () => null,
     );
 
-    // Hanya tampilkan jika ada dosis yang ready
-    if (readyDose.id.isEmpty) {
+    if (readyDose == null || _isLoading) {
       return const SizedBox.shrink();
     }
 
@@ -363,20 +464,25 @@ class _DetailMedicationScreenState extends State<DetailMedicationScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           elevation: 0,
         ),
       ),
     );
   }
 
-  // ─── Delete Button ─────────────────────────────────────────
   Widget _buildDeleteButton() {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: _showDeleteConfirmation,
-        icon: const Icon(Icons.delete_outline, color: const Color(0xFFE53935), size: 20),
+        icon: const Icon(
+          Icons.delete_outline,
+          color: Color(0xFFE53935),
+          size: 20,
+        ),
         label: const Text(
           'Hapus Obat Ini',
           style: TextStyle(
@@ -389,7 +495,9 @@ class _DetailMedicationScreenState extends State<DetailMedicationScreen> {
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 14),
           side: const BorderSide(color: Color(0xFFE53935)),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
       ),
     );
@@ -398,16 +506,23 @@ class _DetailMedicationScreenState extends State<DetailMedicationScreen> {
   void _handleMarkAsTaken(DoseSchedule dose) {
     setState(() {
       final index = _todaySchedules.indexWhere((s) => s.id == dose.id);
+
       if (index != -1) {
-        _todaySchedules[index] = _todaySchedules[index].copyWith(
+        _todaySchedules[index] = dose.copyWith(
           status: DoseStatus.taken,
-          takenTime: DateTime.now().hour.toString().padLeft(2, '0') + '.' + 
-                    DateTime.now().minute.toString().padLeft(2, '0'),
+          takenTime:
+              '${DateTime.now().hour.toString().padLeft(2, '0')}.${DateTime.now().minute.toString().padLeft(2, '0')}',
         );
       }
     });
-    // TODO: Simpan ke database
-    print('Dosis ${dose.doseLabel} ditandai sudah diminum');
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Status hanya berubah sementara dan belum disimpan ke database.',
+        ),
+      ),
+    );
   }
 
   void _showDeleteConfirmation() {
@@ -435,13 +550,7 @@ class _DetailMedicationScreenState extends State<DetailMedicationScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Batal',
-              style: TextStyle(
-                fontFamily: 'PlusJakartaSans',
-                color: AppColors.grey,
-              ),
-            ),
+            child: const Text('Batal'),
           ),
           ElevatedButton(
             onPressed: () {
@@ -450,15 +559,11 @@ class _DetailMedicationScreenState extends State<DetailMedicationScreen> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFE53935),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text(
-              'Hapus',
-              style: TextStyle(
-                fontFamily: 'PlusJakartaSans',
-                color: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
+            child: const Text('Hapus', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -466,15 +571,13 @@ class _DetailMedicationScreenState extends State<DetailMedicationScreen> {
   }
 
   void _handleDeleteMedication() {
-    // TODO: Hapus dari database
-    print('Obat ${widget.medicationName} dihapus');
-    Navigator.pop(context); // Kembali ke halaman sebelumnya
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Fitur hapus obat belum dihubungkan ke database.'),
+      ),
+    );
   }
 }
-
-// ═══════════════════════════════════════════════════════════════
-// DATA MODELS
-// ═══════════════════════════════════════════════════════════════
 
 enum DoseStatus { taken, upcoming, ready }
 
@@ -484,6 +587,7 @@ class DoseSchedule {
   final String timeLabel;
   final String doseLabel;
   final String doseInfo;
+  final String mealInstruction;
   final DoseStatus status;
   final String? takenTime;
   final int? hoursRemaining;
@@ -495,6 +599,7 @@ class DoseSchedule {
     required this.timeLabel,
     required this.doseLabel,
     required this.doseInfo,
+    required this.mealInstruction,
     required this.status,
     this.takenTime,
     this.hoursRemaining,
@@ -507,6 +612,7 @@ class DoseSchedule {
     String? timeLabel,
     String? doseLabel,
     String? doseInfo,
+    String? mealInstruction,
     DoseStatus? status,
     String? takenTime,
     int? hoursRemaining,
@@ -518,6 +624,7 @@ class DoseSchedule {
       timeLabel: timeLabel ?? this.timeLabel,
       doseLabel: doseLabel ?? this.doseLabel,
       doseInfo: doseInfo ?? this.doseInfo,
+      mealInstruction: mealInstruction ?? this.mealInstruction,
       status: status ?? this.status,
       takenTime: takenTime ?? this.takenTime,
       hoursRemaining: hoursRemaining ?? this.hoursRemaining,
@@ -525,10 +632,6 @@ class DoseSchedule {
     );
   }
 }
-
-// ═══════════════════════════════════════════════════════════════
-// HELPER WIDGETS
-// ═══════════════════════════════════════════════════════════════
 
 class _DoseScheduleItem extends StatelessWidget {
   final DoseSchedule schedule;
@@ -554,7 +657,7 @@ class _DoseScheduleItem extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      '${schedule.time} WIB',
+                      '${schedule.time} WIT',
                       style: const TextStyle(
                         fontFamily: 'PlusJakartaSans',
                         fontSize: 16,
@@ -584,6 +687,15 @@ class _DoseScheduleItem extends StatelessWidget {
                     color: AppColors.grey,
                   ),
                 ),
+                if (schedule.mealInstruction.isNotEmpty)
+                  Text(
+                    schedule.mealInstruction,
+                    style: const TextStyle(
+                      fontFamily: 'PlusJakartaSans',
+                      fontSize: 11,
+                      color: AppColors.grey,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -611,7 +723,6 @@ class _DoseScheduleItem extends StatelessWidget {
         bgColor = Colors.white;
         break;
       case DoseStatus.upcoming:
-      default:
         icon = schedule.isTonight ? Icons.nightlight_round : Icons.alarm;
         color = AppColors.grey;
         bgColor = Colors.white;
@@ -636,7 +747,7 @@ class _DoseScheduleItem extends StatelessWidget {
     switch (schedule.status) {
       case DoseStatus.taken:
         return Text(
-          'Selesai ${schedule.takenTime}',
+          'Selesai ${schedule.takenTime ?? ''}',
           style: const TextStyle(
             fontFamily: 'PlusJakartaSans',
             fontSize: 12,
@@ -651,9 +762,9 @@ class _DoseScheduleItem extends StatelessWidget {
             color: AppColors.primary,
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Text(
-            'Dalam ${schedule.hoursRemaining} Jam',
-            style: const TextStyle(
+          child: const Text(
+            'Waktunya',
+            style: TextStyle(
               fontFamily: 'PlusJakartaSans',
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -662,7 +773,6 @@ class _DoseScheduleItem extends StatelessWidget {
           ),
         );
       case DoseStatus.upcoming:
-      default:
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
@@ -671,7 +781,11 @@ class _DoseScheduleItem extends StatelessWidget {
             border: Border.all(color: AppColors.grey.withOpacity(0.3)),
           ),
           child: Text(
-            schedule.isTonight ? 'Malam Ini' : 'Belum',
+            schedule.isTonight
+                ? 'Malam Ini'
+                : schedule.hoursRemaining == 0
+                ? 'Sudah Lewat'
+                : 'Dalam ${schedule.hoursRemaining} Jam',
             style: const TextStyle(
               fontFamily: 'PlusJakartaSans',
               fontSize: 12,

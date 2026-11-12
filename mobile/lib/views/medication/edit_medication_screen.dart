@@ -1,4 +1,7 @@
+import '../../services/medication_service.dart';
+
 import 'package:flutter/material.dart';
+
 import '../../config/app_constant.dart';
 import '../widgets/medication_form_field.dart';
 
@@ -26,6 +29,9 @@ class EditMedicationScreen extends StatefulWidget {
 
 class _EditMedicationScreenState extends State<EditMedicationScreen> {
   late List<EditableSchedule> _schedules;
+
+  final MedicationService _medicationService = MedicationService();
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -142,10 +148,22 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
           spacing: 12,
           runSpacing: 12,
           children: [
-            _FrequencyOption(label: '1x Sehari', isSelected: widget.frequency == '1x Sehari'),
-            _FrequencyOption(label: '2x Sehari', isSelected: widget.frequency == '2x Sehari'),
-            _FrequencyOption(label: '3x Sehari', isSelected: widget.frequency == '3x Sehari'),
-            _FrequencyOption(label: 'Sesuai Kebutuhan', isSelected: widget.frequency == 'Sesuai Kebutuhan'),
+            _FrequencyOption(
+              label: '1x Sehari',
+              isSelected: widget.frequency == '1x Sehari',
+            ),
+            _FrequencyOption(
+              label: '2x Sehari',
+              isSelected: widget.frequency == '2x Sehari',
+            ),
+            _FrequencyOption(
+              label: '3x Sehari',
+              isSelected: widget.frequency == '3x Sehari',
+            ),
+            _FrequencyOption(
+              label: 'Sesuai Kebutuhan',
+              isSelected: widget.frequency == 'Sesuai Kebutuhan',
+            ),
           ],
         ),
       ],
@@ -154,10 +172,14 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
 
   int _getTargetCount() {
     switch (widget.frequency) {
-      case '1x Sehari': return 1;
-      case '2x Sehari': return 2;
-      case '3x Sehari': return 3;
-      default: return _schedules.length;
+      case '1x Sehari':
+        return 1;
+      case '2x Sehari':
+        return 2;
+      case '3x Sehari':
+        return 3;
+      default:
+        return _schedules.length;
     }
   }
 
@@ -241,11 +263,17 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: _MealToggle(label: 'Sebelum Makan', isSelected: isBeforeMeal),
+                    child: _MealToggle(
+                      label: 'Sebelum Makan',
+                      isSelected: isBeforeMeal,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _MealToggle(label: 'Setelah Makan', isSelected: !isBeforeMeal),
+                    child: _MealToggle(
+                      label: 'Setelah Makan',
+                      isSelected: !isBeforeMeal,
+                    ),
                   ),
                 ],
               ),
@@ -337,7 +365,10 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.lightBlue,
                       borderRadius: BorderRadius.circular(12),
@@ -355,22 +386,27 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              ..._schedules.map((schedule) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _PreviewTimelineItem(
-                      time: '${schedule.time} WIB',
-                      meal: widget.mealInstruction,
-                      label: schedule.label,
-                      isAdjusted: schedule.isAdjusted,
-                    ),
-                  )),
+              ..._schedules.map(
+                (schedule) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _PreviewTimelineItem(
+                    time: '${schedule.time} WIB',
+                    meal: widget.mealInstruction,
+                    label: schedule.label,
+                    isAdjusted: schedule.isAdjusted,
+                  ),
+                ),
+              ),
               const Divider(height: 1),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.lightBlue,
                       borderRadius: BorderRadius.circular(8),
@@ -378,7 +414,11 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.calendar_today, color: AppColors.primary, size: 12),
+                        Icon(
+                          Icons.calendar_today,
+                          color: AppColors.primary,
+                          size: 12,
+                        ),
                         SizedBox(width: 4),
                         Text(
                           'Penyesuaian Khusus Hari Ini',
@@ -416,7 +456,7 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
           width: double.infinity,
           height: 52,
           child: ElevatedButton.icon(
-            onPressed: _handleSave,
+            onPressed: _isSaving ? null : _handleSave,
             icon: const Icon(Icons.check_circle_outline, size: 20),
             label: const Text(
               'SIMPAN PERUBAHAN JADWAL',
@@ -429,7 +469,9 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               elevation: 0,
             ),
           ),
@@ -448,9 +490,50 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
     );
   }
 
-  void _handleSave() {
-    print('Simpan perubahan jadwal untuk obat ${widget.medicationName}');
-    Navigator.pop(context);
+  Future<void> _handleSave() async {
+    if (_isSaving) return;
+
+    if (_schedules.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Jadwal tidak ditemukan.')));
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      final schedule = _schedules.first;
+
+      await _medicationService.saveScheduleOverride(
+        scheduleId: schedule.id,
+        newTime: schedule.time,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Jadwal dosis berikutnya berhasil diperbarui.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal menyimpan jadwal: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
   }
 
   Widget _sectionTitle(String title) {
@@ -471,12 +554,14 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
 // ═══════════════════════════════════════════════════════════════
 
 class EditableSchedule {
+  final String id;
   final String label;
   final String time;
   final String tag;
   final bool isAdjusted;
 
   const EditableSchedule({
+    required this.id,
     required this.label,
     required this.time,
     required this.tag,
@@ -484,12 +569,14 @@ class EditableSchedule {
   });
 
   EditableSchedule copyWith({
+    String? id,
     String? label,
     String? time,
     String? tag,
     bool? isAdjusted,
   }) {
     return EditableSchedule(
+      id: id ?? this.id,
       label: label ?? this.label,
       time: time ?? this.time,
       tag: tag ?? this.tag,
@@ -506,10 +593,7 @@ class _FrequencyOption extends StatelessWidget {
   final String label;
   final bool isSelected;
 
-  const _FrequencyOption({
-    required this.label,
-    required this.isSelected,
-  });
+  const _FrequencyOption({required this.label, required this.isSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -521,7 +605,9 @@ class _FrequencyOption extends StatelessWidget {
           color: isSelected ? AppColors.lightBlue : Colors.white,
           borderRadius: BorderRadius.circular(25),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.lightBlue.withValues(alpha: 0.5),
+            color: isSelected
+                ? AppColors.primary
+                : AppColors.lightBlue.withValues(alpha: 0.5),
             width: isSelected ? 1.5 : 1,
           ),
         ),
@@ -535,7 +621,9 @@ class _FrequencyOption extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: isSelected ? AppColors.primary : Colors.white,
                 border: Border.all(
-                  color: isSelected ? AppColors.primary : AppColors.grey.withValues(alpha: 0.4),
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.grey.withValues(alpha: 0.4),
                 ),
               ),
               child: isSelected
@@ -569,9 +657,11 @@ class _EditableScheduleItem extends StatelessWidget {
   });
 
   IconData _getIcon() {
-    if (schedule.label.toLowerCase().contains('pagi')) return Icons.wb_sunny_outlined;
+    if (schedule.label.toLowerCase().contains('pagi'))
+      return Icons.wb_sunny_outlined;
     if (schedule.label.toLowerCase().contains('siang')) return Icons.wb_sunny;
-    if (schedule.label.toLowerCase().contains('malam')) return Icons.nightlight_round;
+    if (schedule.label.toLowerCase().contains('malam'))
+      return Icons.nightlight_round;
     return Icons.access_time;
   }
 
@@ -615,7 +705,10 @@ class _EditableScheduleItem extends StatelessWidget {
                     if (schedule.isAdjusted) ...[
                       const SizedBox(height: 4),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.lightBlue,
                           borderRadius: BorderRadius.circular(8),
@@ -651,12 +744,16 @@ class _EditableScheduleItem extends StatelessWidget {
                     initialTime: _parseTime(schedule.time),
                   );
                   if (picked != null) {
-                    final formatted = '${picked.hour.toString().padLeft(2, '0')}.${picked.minute.toString().padLeft(2, '0')}';
+                    final formatted =
+                        '${picked.hour.toString().padLeft(2, '0')}.${picked.minute.toString().padLeft(2, '0')}';
                     onTimeChanged(formatted);
                   }
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
@@ -675,7 +772,11 @@ class _EditableScheduleItem extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      const Icon(Icons.access_time, color: AppColors.navy, size: 16),
+                      const Icon(
+                        Icons.access_time,
+                        color: AppColors.navy,
+                        size: 16,
+                      ),
                     ],
                   ),
                 ),
@@ -725,10 +826,7 @@ class _EditableScheduleItem extends StatelessWidget {
 
   TimeOfDay _parseTime(String time) {
     final parts = time.split('.');
-    return TimeOfDay(
-      hour: int.parse(parts[0]),
-      minute: int.parse(parts[1]),
-    );
+    return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
   }
 }
 
@@ -736,10 +834,7 @@ class _MealToggle extends StatelessWidget {
   final String label;
   final bool isSelected;
 
-  const _MealToggle({
-    required this.label,
-    required this.isSelected,
-  });
+  const _MealToggle({required this.label, required this.isSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -751,7 +846,9 @@ class _MealToggle extends StatelessWidget {
           color: isSelected ? AppColors.primary : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.grey.withValues(alpha: 0.3),
+            color: isSelected
+                ? AppColors.primary
+                : AppColors.grey.withValues(alpha: 0.3),
           ),
         ),
         child: Text(
@@ -825,7 +922,11 @@ class _PreviewTimelineItem extends StatelessWidget {
             ],
           ),
         ),
-        const Icon(Icons.notifications_outlined, color: AppColors.grey, size: 20),
+        const Icon(
+          Icons.notifications_outlined,
+          color: AppColors.grey,
+          size: 20,
+        ),
       ],
     );
   }

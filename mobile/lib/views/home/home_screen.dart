@@ -1,3 +1,5 @@
+import '../meal/meal_schedule_screen.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -6,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../config/app_constant.dart';
 import '../../routes/app_routes.dart';
 import '../medication/add_medication_screen.dart';
+import '../medication/edit_medication_screen.dart';
 import '../../services/medication_service.dart';
 import '../widgets/medication_card.dart';
 
@@ -125,6 +128,120 @@ class _HomeScreenState extends State<HomeScreen> {
       );
   }
 
+  Future<void> _openRescheduleForNextDose(
+    Map<String, dynamic> missedSchedule,
+  ) async {
+    try {
+      final medicationId = missedSchedule['medication_id']?.toString();
+
+      if (medicationId == null || medicationId.isEmpty) {
+        throw Exception('ID obat tidak ditemukan.');
+      }
+
+      // Ambil seluruh jadwal obat, termasuk penyesuaian hari ini.
+      final schedules = await _medicationService
+          .getMedicationSchedulesWithOverrides(medicationId);
+
+      int getMinutes(String? value) {
+        final parts = (value ?? '').split(':');
+        if (parts.length < 2) return -1;
+
+        final hour = int.tryParse(parts[0]) ?? -1;
+        final minute = int.tryParse(parts[1]) ?? -1;
+
+        if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+          return -1;
+        }
+
+        return hour * 60 + minute;
+      }
+
+      final missedTime = getMinutes(
+        missedSchedule['schedule_time']?.toString(),
+      );
+
+      // Cari jadwal aktif berikutnya setelah dosis terlewat.
+      final nextSchedules = schedules.where((item) {
+        final itemId = item['id'].toString();
+        final itemTime = getMinutes(item['schedule_time']?.toString());
+
+        return itemId != missedSchedule['id'].toString() &&
+            item['is_active'] != false &&
+            itemTime > missedTime;
+      }).toList();
+
+      nextSchedules.sort((a, b) {
+        return getMinutes(a['schedule_time'].toString())
+            .compareTo(getMinutes(b['schedule_time'].toString()));
+      });
+
+      if (nextSchedules.isEmpty) {
+        _showPrototypeMessage(
+          'Tidak ada jadwal berikutnya untuk obat ini hari ini.',
+        );
+        return;
+      }
+
+      final nextSchedule = nextSchedules.first;
+      final rawTime = nextSchedule['schedule_time'].toString();
+      final parts = rawTime.split(':');
+
+      final hour = int.parse(parts[0]);
+      final minute = int.parse(parts[1]);
+
+      final timeLabel = hour < 11
+          ? 'Pagi'
+          : hour < 15
+          ? 'Siang'
+          : hour < 18
+          ? 'Sore'
+          : 'Malam';
+
+      final frequency = schedules.length == 1
+          ? '1x Sehari'
+          : schedules.length == 2
+          ? '2x Sehari'
+          : schedules.length == 3
+          ? '3x Sehari'
+          : 'Sesuai Kebutuhan';
+
+      if (!mounted) return;
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => EditMedicationScreen(
+            medicationId: medicationId,
+            medicationName:
+                nextSchedule['medication_name']?.toString() ?? 'Obat',
+            dosage: nextSchedule['medication_dose']?.toString() ?? '',
+            frequency: frequency,
+            mealInstruction: nextSchedule['meal_instruction']?.toString() ?? '',
+            initialSchedules: [
+              EditableSchedule(
+                id: nextSchedule['id'].toString(),
+                label: timeLabel,
+                time:
+                    '${hour.toString().padLeft(2, '0')}.${minute.toString().padLeft(2, '0')}',
+                tag: 'Berikutnya',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (mounted) {
+        await _loadTodayMedications();
+      }
+    } catch (e) {
+      debugPrint('Gagal membuka pengaturan ulang: $e');
+
+      if (mounted) {
+        _showPrototypeMessage('Gagal membuka jadwal berikutnya: $e');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -174,9 +291,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             subtitle: 'Atur menu',
                             iconColor: _orange,
                             iconBackground: _orangeBackground,
-                            onTap: () => _showPrototypeMessage(
-                              'Menu Jadwal Makan belum terhubung.',
-                            ),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const MealScheduleScreen(),
+                                ),
+                              );
+                            },
                           ),
                         ),
                       ],
@@ -409,7 +532,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _showPrototypeMessage('Pengaturan ulang jadwal belum terhubung.');
       },
       onTapAturUlang: () {
-        _showPrototypeMessage('Pengaturan ulang jadwal belum terhubung.');
+        _openRescheduleForNextDose(schedule);
       },
     );
   }
