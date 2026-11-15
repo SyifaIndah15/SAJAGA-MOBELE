@@ -6,7 +6,8 @@ import '../widgets/profile_section.dart';
 import '../widgets/profile_menu_tile.dart';
 import '../widgets/reminder_tile.dart';
 import '../widgets/history_item_card.dart';
-import '../history/history_screen.dart';
+import '../history/medication_history_screen.dart';
+import '../history/meal_history_screen.dart';
 import '../../routes/app_routes.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -277,18 +278,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Bagian riwayat.
   Widget _buildHistorySection() {
     return ProfileSection(
       title: 'Riwayat Terpadu',
       icon: Icons.history,
       actionText: 'Lihat Semua',
+
+      // Navigasi mengikuti tab riwayat yang sedang aktif.
       onActionTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const HistoryScreen()),
-        );
+        if (_selectedHistoryTab == 0) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const MedicationHistoryScreen(),
+            ),
+          );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const MealHistoryScreen()),
+          );
+        }
       },
+
       child: Column(
         children: [
           _buildHistoryTab(),
