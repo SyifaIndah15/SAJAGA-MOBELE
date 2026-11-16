@@ -4,6 +4,7 @@ import '../../config/app_constant.dart';
 import '../../utils/snackbar_helper.dart';
 import '../widgets/food_card.dart';
 import 'food_detail_screen.dart';
+import '../../services/food_service.dart';
 
 class FoodRecommendationScreen extends StatefulWidget {
   const FoodRecommendationScreen({super.key});
@@ -13,13 +14,18 @@ class FoodRecommendationScreen extends StatefulWidget {
       _FoodRecommendationScreenState();
 }
 
-class _FoodRecommendationScreenState
-    extends State<FoodRecommendationScreen> {
-  final TextEditingController _searchController =
-      TextEditingController();
+class _FoodRecommendationScreenState extends State<FoodRecommendationScreen> {
+  final TextEditingController _searchController = TextEditingController();
+
+  final FoodService _foodService = FoodService();
 
   String _selectedFilter = 'Semua';
   String _searchQuery = '';
+
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  List<FoodItem> _foods = [];
 
   final List<String> _filters = const [
     'Semua',
@@ -28,258 +34,43 @@ class _FoodRecommendationScreenState
     'Makan Malam',
   ];
 
-  // DATA CONTOH MAKANAN
-  // Nantinya dapat diganti dengan data dari Supabase.
+  @override
+  void initState() {
+    super.initState();
+    _loadFoods();
+  }
 
-  final List<FoodItem> _foods = const [
-    FoodItem(
-      id: 'food-01',
-      name: 'Bubur Labu Ayam Suwir',
-      calories: 245,
-      category: 'Sarapan',
-      tags: ['Ramah Mag'],
-      description:
-          'Tekstur lembut yang hangat dengan gizi seimbang.',
-      summary:
-          'Bubur beras lembut yang dimasak perlahan bersama kaldu ayam dan sentuhan jahe.',
-      imageUrl:
-          'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=700',
-      protein: 18,
-      carbs: 32,
-      fat: 6,
-      prepMinutes: 30,
-      ingredients: [
-        'Beras putih',
-        'Dada ayam suwir',
-        'Labu kuning',
-        'Jahe',
-        'Kaldu rendah garam',
-      ],
-      benefits: [
-        'Tekstur lembut dan mudah dikonsumsi.',
-        'Mengandung protein dari ayam.',
-        'Labu kuning menyediakan vitamin dan serat.',
-      ],
-      cautions: [
-        'Sesuaikan bumbu dengan kebutuhan kesehatan.',
-        'Perhatikan toleransi terhadap bahan makanan.',
-      ],
-    ),
+  // Mengambil data makanan dari Supabase.
+  Future<void> _loadFoods() async {
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
 
-    FoodItem(
-      id: 'food-02',
-      name: 'Sup Bening Labu Siam & Wortel',
-      calories: 162,
-      category: 'Makan Siang',
-      tags: ['Tinggi Serat'],
-      description:
-          'Kuah sayur segar dengan tekstur lembut dan rasa ringan.',
-      imageUrl:
-          'https://images.unsplash.com/photo-1547592180-85f173990554?w=700',
-      protein: 7,
-      carbs: 24,
-      fat: 4,
-      prepMinutes: 25,
-      ingredients: [
-        'Labu siam',
-        'Wortel',
-        'Bawang putih',
-        'Daun bawang',
-        'Air',
-      ],
-      benefits: [
-        'Mengandung serat dari sayuran.',
-        'Kuah bening terasa ringan.',
-        'Dapat menjadi pilihan menu sayur harian.',
-      ],
-      cautions: [
-        'Batasi garam dan penyedap sesuai kebutuhan.',
-      ],
-    ),
+    try {
+      final response = await _foodService.getFoods();
 
-    FoodItem(
-      id: 'food-03',
-      name: 'Oatmeal Pisang & Madu',
-      calories: 220,
-      category: 'Sarapan',
-      tags: ['Lepas Lambung'],
-      description:
-          'Oatmeal dengan pisang untuk pilihan sarapan praktis.',
-      imageUrl:
-          'https://naoq8gawh7kpd7sm.public.blob.vercel-storage.com/Ovsena%20ka%C5%A1a%20s%20bananom%20i%20medom-5QEGAqjjxYMBEneaJeJGLypEgaa10a.webp',
-      protein: 8,
-      carbs: 38,
-      fat: 5,
-      prepMinutes: 10,
-      ingredients: [
-        'Oatmeal',
-        'Pisang',
-        'Susu rendah lemak',
-        'Madu',
-      ],
-      benefits: [
-        'Oat menyediakan serat.',
-        'Pisang memberi rasa manis alami.',
-        'Praktis disiapkan pada pagi hari.',
-      ],
-      cautions: [
-        'Madu tetap mengandung gula. Sesuaikan porsinya.',
-      ],
-    ),
+      final foods = response.map((item) => FoodItem.fromMap(item)).toList();
 
-    FoodItem(
-      id: 'food-04',
-      name: 'Nasi Tim Ikan Kakap Kukus',
-      calories: 240,
-      category: 'Makan Siang',
-      tags: ['Bebas Minyak'],
-      description:
-          'Nasi tim dengan ikan kukus dan sayuran pilihan.',
-      imageUrl:
-          'https://mealpractice.b-cdn.net/306719053685329920/steamed-fish-with-ginger-and-scallions-served-with-stir-fried-bok-choy-and-jasmine-rice-fH4AiLCnLg.webp',
-      protein: 21,
-      carbs: 29,
-      fat: 5,
-      prepMinutes: 35,
-      ingredients: [
-        'Nasi',
-        'Ikan kakap',
-        'Wortel',
-        'Brokoli',
-        'Jahe',
-      ],
-      benefits: [
-        'Ikan menyediakan protein.',
-        'Metode kukus mengurangi penggunaan minyak.',
-        'Sayuran menambah variasi serat.',
-      ],
-      cautions: [
-        'Pastikan ikan matang sempurna dan bebas duri.',
-      ],
-    ),
+      if (!mounted) return;
 
-    FoodItem(
-      id: 'food-05',
-      name: 'Sayur Bening Bayam Jagung Manis',
-      calories: 110,
-      category: 'Makan Siang',
-      tags: ['Zat Besi Alami'],
-      description:
-          'Sayuran berkuah ringan dengan jagung manis.',
-      imageUrl:
-          'https://images.unsplash.com/photo-1547592180-85f173990554?w=700',
-      protein: 5,
-      carbs: 18,
-      fat: 2,
-      prepMinutes: 15,
-      ingredients: [
-        'Bayam',
-        'Jagung manis',
-        'Bawang merah',
-        'Temu kunci',
-      ],
-      benefits: [
-        'Bayam mengandung beberapa mineral.',
-        'Jagung memberi rasa manis alami.',
-        'Kuah bening mudah dipadukan dengan lauk.',
-      ],
-      cautions: [
-        'Konsumsi dalam kondisi segar dan matang.',
-      ],
-    ),
+      setState(() {
+        _foods = foods;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Gagal mengambil data makanan: $e');
 
-    FoodItem(
-      id: 'food-06',
-      name: 'Pepes Tahu Jamur Daun Kemangi',
-      calories: 180,
-      category: 'Makan Malam',
-      tags: ['Bebas Santan'],
-      description:
-          'Pepes tahu dengan jamur dan aroma daun kemangi.',
-      imageUrl:
-          'https://images.unsplash.com/photo-1547592180-85f173990554?w=700',
-      protein: 13,
-      carbs: 12,
-      fat: 8,
-      prepMinutes: 30,
-      ingredients: [
-        'Tahu',
-        'Jamur',
-        'Daun kemangi',
-        'Tomat',
-        'Daun pisang',
-      ],
-      benefits: [
-        'Tahu merupakan sumber protein nabati.',
-        'Dimasak dengan cara dikukus.',
-        'Menghadirkan variasi menu tanpa santan.',
-      ],
-      cautions: [
-        'Sesuaikan penggunaan garam dan bumbu.',
-      ],
-    ),
+      if (!mounted) return;
 
-    FoodItem(
-      id: 'food-07',
-      name: 'Sup Ayam Kampung Kuah Jahe',
-      calories: 230,
-      category: 'Makan Malam',
-      tags: ['Saring Kuah'],
-      description:
-          'Sup ayam hangat dengan kuah jahe yang ringan.',
-      imageUrl:
-          'https://images.unsplash.com/photo-1547592180-85f173990554?w=700',
-      protein: 20,
-      carbs: 14,
-      fat: 9,
-      prepMinutes: 40,
-      ingredients: [
-        'Ayam kampung',
-        'Jahe',
-        'Wortel',
-        'Daun bawang',
-      ],
-      benefits: [
-        'Ayam menyediakan protein.',
-        'Kuah hangat cocok sebagai menu berkuah.',
-        'Sayuran menambah variasi nutrisi.',
-      ],
-      cautions: [
-        'Buang lemak berlebih dan sesuaikan bumbu.',
-      ],
-    ),
-
-    FoodItem(
-      id: 'food-08',
-      name: 'Ikan Salmon Panggang Lemon Herbal',
-      calories: 360,
-      category: 'Makan Malam',
-      tags: ['Anti-inflamasi'],
-      description:
-          'Ikan salmon panggang dengan lemon dan rempah.',
-      imageUrl:
-          'https://res.cloudinary.com/solin-fitness/image/upload/c_scale%2Cw_800%2Cq_auto%2Cf_auto/single-meal-images/bfatcaww9ecejexbaaud',
-      protein: 28,
-      carbs: 10,
-      fat: 20,
-      prepMinutes: 25,
-      ingredients: [
-        'Ikan salmon',
-        'Lemon',
-        'Rosemary',
-        'Lada',
-        'Minyak zaitun',
-      ],
-      benefits: [
-        'Salmon mengandung protein dan lemak omega-3.',
-        'Dipanggang dengan penggunaan minyak terukur.',
-        'Lemon dan rempah memberi aroma.',
-      ],
-      cautions: [
-        'Perhatikan alergi ikan dan kebutuhan lemak harian.',
-      ],
-    ),
-  ];
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -290,8 +81,7 @@ class _FoodRecommendationScreenState
   List<FoodItem> get _filteredFoods {
     return _foods.where((food) {
       final matchesFilter =
-          _selectedFilter == 'Semua' ||
-          food.category == _selectedFilter;
+          _selectedFilter == 'Semua' || food.category == _selectedFilter;
 
       final query = _searchQuery.toLowerCase().trim();
 
@@ -299,9 +89,7 @@ class _FoodRecommendationScreenState
           query.isEmpty ||
           food.name.toLowerCase().contains(query) ||
           food.description.toLowerCase().contains(query) ||
-          food.tags.any(
-            (tag) => tag.toLowerCase().contains(query),
-          );
+          food.tags.any((tag) => tag.toLowerCase().contains(query));
 
       return matchesFilter && matchesSearch;
     }).toList();
@@ -310,9 +98,7 @@ class _FoodRecommendationScreenState
   void _openDetail(FoodItem food) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => FoodDetailScreen(food: food),
-      ),
+      MaterialPageRoute(builder: (_) => FoodDetailScreen(food: food)),
     );
   }
 
@@ -326,10 +112,7 @@ class _FoodRecommendationScreenState
         centerTitle: false,
 
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            size: 18,
-          ),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
           onPressed: () => Navigator.maybePop(context),
         ),
 
@@ -348,11 +131,7 @@ class _FoodRecommendationScreenState
             child: CircleAvatar(
               radius: 14,
               backgroundColor: AppColors.primary,
-              child: const Icon(
-                Icons.person,
-                color: Colors.white,
-                size: 16,
-              ),
+              child: const Icon(Icons.person, color: Colors.white, size: 16),
             ),
           ),
         ],
@@ -365,15 +144,80 @@ class _FoodRecommendationScreenState
           _buildFilters(),
 
           Expanded(
-            child: _filteredFoods.isEmpty
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  )
+                : _errorMessage != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.cloud_off_outlined,
+                            size: 40,
+                            color: AppColors.grey,
+                          ),
+                          const SizedBox(height: 10),
+                          const Text(
+                            'Gagal memuat makanan',
+                            style: TextStyle(
+                              color: AppColors.navy,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            _errorMessage!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          ElevatedButton.icon(
+                            onPressed: _loadFoods,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Coba Lagi'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : _foods.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.restaurant_outlined,
+                          size: 42,
+                          color: AppColors.grey,
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'Belum ada data makanan',
+                          style: TextStyle(
+                            color: AppColors.navy,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _loadFoods,
+                          child: const Text('Muat Ulang'),
+                        ),
+                      ],
+                    ),
+                  )
+                : _filteredFoods.isEmpty
                 ? _buildEmptyState()
                 : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(
-                      14, 8, 14, 22,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(14, 8, 14, 22),
                     itemCount: _filteredFoods.length,
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(height: 10),
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (context, index) {
                       final food = _filteredFoods[index];
 
@@ -429,10 +273,7 @@ class _FoodRecommendationScreenState
                 SizedBox(height: 2),
                 Text(
                   'Temukan menu yang sesuai dengan kebutuhanmu.',
-                  style: TextStyle(
-                    color: AppColors.grey,
-                    fontSize: 9,
-                  ),
+                  style: TextStyle(color: AppColors.grey, fontSize: 9),
                 ),
               ],
             ),
@@ -455,16 +296,10 @@ class _FoodRecommendationScreenState
             _searchQuery = value;
           });
         },
-        style: const TextStyle(
-          fontSize: 11,
-          color: AppColors.navy,
-        ),
+        style: const TextStyle(fontSize: 11, color: AppColors.navy),
         decoration: InputDecoration(
           hintText: 'Cari makanan sehat...',
-          hintStyle: const TextStyle(
-            fontSize: 11,
-            color: AppColors.grey,
-          ),
+          hintStyle: const TextStyle(fontSize: 11, color: AppColors.grey),
 
           prefixIcon: const Icon(
             Icons.search_rounded,
@@ -482,17 +317,12 @@ class _FoodRecommendationScreenState
                       _searchQuery = '';
                     });
                   },
-                  icon: const Icon(
-                    Icons.close_rounded,
-                    size: 17,
-                  ),
+                  icon: const Icon(Icons.close_rounded, size: 17),
                 ),
 
           filled: true,
           fillColor: const Color(0xFFF5F8FC),
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 10,
-          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 10),
 
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(13),
@@ -513,8 +343,7 @@ class _FoodRecommendationScreenState
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: _filters.length,
-        separatorBuilder: (_, __) =>
-            const SizedBox(width: 7),
+        separatorBuilder: (_, __) => const SizedBox(width: 7),
         itemBuilder: (context, index) {
           final filter = _filters[index];
           final selected = filter == _selectedFilter;
@@ -530,9 +359,7 @@ class _FoodRecommendationScreenState
             },
 
             labelStyle: TextStyle(
-              color: selected
-                  ? Colors.white
-                  : AppColors.grey,
+              color: selected ? Colors.white : AppColors.grey,
               fontSize: 9,
               fontWeight: FontWeight.w600,
             ),
@@ -542,9 +369,7 @@ class _FoodRecommendationScreenState
             side: BorderSide.none,
             showCheckmark: false,
 
-            padding: const EdgeInsets.symmetric(
-              horizontal: 7,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 7),
 
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
@@ -586,10 +411,7 @@ class _FoodRecommendationScreenState
             const Text(
               'Coba kata kunci atau kategori lainnya.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.grey,
-                fontSize: 10,
-              ),
+              style: TextStyle(color: AppColors.grey, fontSize: 10),
             ),
 
             TextButton(
@@ -608,10 +430,7 @@ class _FoodRecommendationScreenState
               },
               child: const Text(
                 'Atur ulang filter',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: AppColors.primary,
-                ),
+                style: TextStyle(fontSize: 10, color: AppColors.primary),
               ),
             ),
           ],

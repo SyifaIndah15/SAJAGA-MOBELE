@@ -28,7 +28,7 @@ class MedicationFormField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = AppColors.lightBlue.withOpacity(0.65);
+    final borderColor = AppColors.lightBlue.withValues(alpha: 0.65);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,52 +57,80 @@ class MedicationFormField extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 6),
-        TextField(
+
+        TextFormField(
           controller: controller,
           keyboardType: keyboardType,
           enabled: enabled,
           onChanged: onChanged,
+
+          validator: (value) {
+            if (isRequired && (value == null || value.trim().isEmpty)) {
+              return '$label wajib diisi.';
+            }
+
+            return null;
+          },
+
           style: const TextStyle(
             fontFamily: 'PlusJakartaSans',
             fontSize: 12,
             color: AppColors.navy,
           ),
+
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: TextStyle(
               fontFamily: 'PlusJakartaSans',
               fontSize: 11,
-              color: enabled ? AppColors.grey : AppColors.grey.withOpacity(0.5),
+              color: enabled
+                  ? AppColors.grey
+                  : AppColors.grey.withValues(alpha: 0.5),
             ),
+
+            errorStyle: const TextStyle(
+              fontFamily: 'PlusJakartaSans',
+              fontSize: 11,
+              color: Colors.red,
+            ),
+
             prefixIcon: prefixIcon != null
                 ? Icon(prefixIcon, color: AppColors.primary, size: 17)
                 : null,
+
             suffixIcon: suffixIcon != null
                 ? Icon(suffixIcon, color: AppColors.primary, size: 17)
                 : null,
+
             prefixIconConstraints: const BoxConstraints(
               minWidth: 38,
               minHeight: 36,
             ),
+
             suffixIconConstraints: const BoxConstraints(
               minWidth: 38,
               minHeight: 36,
             ),
+
             filled: true,
             fillColor: enabled ? Colors.white : Colors.grey.shade100,
             isDense: true,
+
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 12,
               vertical: 10,
             ),
+
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(20),
               borderSide: BorderSide(color: borderColor),
             ),
+
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(20),
               borderSide: BorderSide(color: borderColor),
             ),
+
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(20),
               borderSide: const BorderSide(
@@ -110,9 +138,22 @@ class MedicationFormField extends StatelessWidget {
                 width: 1.3,
               ),
             ),
+
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: const BorderSide(color: Colors.red),
+            ),
+
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: const BorderSide(color: Colors.red, width: 1.3),
+            ),
+
             disabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(20),
-              borderSide: BorderSide(color: AppColors.grey.withOpacity(0.3)),
+              borderSide: BorderSide(
+                color: AppColors.grey.withValues(alpha: 0.3),
+              ),
             ),
           ),
         ),

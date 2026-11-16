@@ -29,6 +29,7 @@ class EditMedicationScreen extends StatefulWidget {
 
 class _EditMedicationScreenState extends State<EditMedicationScreen> {
   late List<EditableSchedule> _schedules;
+  late Map<String, String> _initialTimes;
 
   final MedicationService _medicationService = MedicationService();
   bool _isSaving = false;
@@ -37,6 +38,9 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
   void initState() {
     super.initState();
     _schedules = List.from(widget.initialSchedules);
+    _initialTimes = {
+      for (final schedule in _schedules) schedule.id: schedule.time,
+    };
   }
 
   void _updateScheduleTime(int index, String newTime) {
@@ -312,7 +316,7 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Pengaturan ini hanya berlaku untuk hari ini. Jadwal akan otomatis kembali ke setelan awal (jadwal rutin) mulai besok hari setelah dosis malam selesai diminum.',
+                  'Perubahan ini hanya berlaku untuk hari ini. Jadwal rutin tetap digunakan pada tanggal berikutnya.',
                   style: TextStyle(
                     fontFamily: 'PlusJakartaSans',
                     fontSize: 12,
@@ -390,7 +394,7 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
                 (schedule) => Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: _PreviewTimelineItem(
-                    time: '${schedule.time} WIB',
+                    time: schedule.time,
                     meal: widget.mealInstruction,
                     label: schedule.label,
                     isAdjusted: schedule.isAdjusted,
@@ -478,7 +482,7 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
         ),
         const SizedBox(height: 8),
         const Text(
-          'Notifikasi alarm akan diperbarui secara otomatis di perangkat Anda.',
+          'Perubahan ini memperbarui jadwal hari ini. Notifikasi dan alarm akan aktif setelah integrasi pengingat selesai.',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontFamily: 'PlusJakartaSans',
@@ -494,27 +498,39 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
     if (_isSaving) return;
 
     if (_schedules.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Jadwal tidak ditemukan.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Jadwal tidak ditemukan.')),
+      );
+      return;
+    }
+
+    // Simpan hanya jadwal yang waktunya benar-benar diubah.
+    final changedSchedules = _schedules.where((schedule) {
+      return _initialTimes[schedule.id] != schedule.time;
+    }).toList();
+
+    if (changedSchedules.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Belum ada perubahan jadwal.')),
+      );
       return;
     }
 
     setState(() => _isSaving = true);
 
     try {
-      final schedule = _schedules.first;
-
-      await _medicationService.saveScheduleOverride(
-        scheduleId: schedule.id,
-        newTime: schedule.time,
-      );
+      for (final schedule in changedSchedules) {
+        await _medicationService.saveScheduleOverride(
+          scheduleId: schedule.id,
+          newTime: schedule.time,
+        );
+      }
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Jadwal dosis berikutnya berhasil diperbarui.'),
+          content: Text('Perubahan jadwal berhasil disimpan.'),
           backgroundColor: Colors.green,
         ),
       );
@@ -525,7 +541,7 @@ class _EditMedicationScreenState extends State<EditMedicationScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gagal menyimpan jadwal: $e'),
+          content: Text('Gagal menyimpan perubahan jadwal: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -725,7 +741,7 @@ class _EditableScheduleItem extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       const Text(
-                        'Sesuai interval optimal',
+                        'Pengingat disesuaikan untuk hari ini',
                         style: TextStyle(
                           fontFamily: 'PlusJakartaSans',
                           fontSize: 11,
@@ -808,7 +824,7 @@ class _EditableScheduleItem extends StatelessWidget {
                 SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'Interval aman untuk penyerapan optimal tubuh',
+                    'Waktu pengingat diubah untuk hari ini.',
                     style: TextStyle(
                       fontFamily: 'PlusJakartaSans',
                       fontSize: 11,

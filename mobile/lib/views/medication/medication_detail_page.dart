@@ -55,7 +55,6 @@ class _DetailMedicationScreenState extends State<DetailMedicationScreen> {
         final hour = int.parse(parts[0]);
         final minute = int.parse(parts[1]);
 
-        final time = TimeOfDay(hour: hour, minute: minute);
         final scheduledDateTime = DateTime(
           now.year,
           now.month,

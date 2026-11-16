@@ -5,11 +5,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../food/food_recommendation_screen.dart';
 import '../../config/app_constant.dart';
 import '../../routes/app_routes.dart';
 import '../medication/add_medication_screen.dart';
 import '../medication/edit_medication_screen.dart';
 import '../../services/medication_service.dart';
+import '../../services/meal_service.dart';
 import '../widgets/medication_card.dart';
 
 const Color _pageBackground = Color(0xFFF4FAFD);
@@ -30,7 +32,11 @@ class _HomeScreenState extends State<HomeScreen> {
   String _userName = 'Pengguna';
 
   final MedicationService _medicationService = MedicationService();
+  final MealService _mealService = MealService();
   List<Map<String, dynamic>> _medicationSchedules = [];
+  List<Map<String, dynamic>> _mealSchedules = [];
+  bool _isLoadingMeals = true;
+  String? _mealError;
   bool _isLoadingMedications = true;
   String? _medicationError;
   Timer? _statusRefreshTimer;
@@ -38,8 +44,15 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+
+    final currentUser = Supabase.instance.client.auth.currentUser;
+
+    debugPrint('SAJAGA USER ID: ${currentUser?.id}');
+    debugPrint('SAJAGA EMAIL: ${currentUser?.email}');
+
     _loadUserName();
     _loadTodayMedications();
+    _loadMealSchedules();
 
     // Perbarui status waktu secara berkala tanpa mengambil ulang data Supabase.
     _statusRefreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -53,6 +66,46 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _statusRefreshTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _loadMealSchedules() async {
+    if (mounted) {
+      setState(() {
+        _isLoadingMeals = true;
+        _mealError = null;
+      });
+    }
+
+    try {
+      final schedules = await _mealService.getMealSchedules();
+      if (!mounted) return;
+
+      setState(() {
+        _mealSchedules = schedules
+            .where((item) => item['is_active'] != false)
+            .toList();
+        _isLoadingMeals = false;
+      });
+    } catch (e) {
+      debugPrint('Gagal mengambil jadwal makan: $e');
+      if (!mounted) return;
+
+      setState(() {
+        _mealError = e.toString();
+        _isLoadingMeals = false;
+      });
+    }
+  }
+
+  Future<void> _openMealSchedule() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (context) => const MealScheduleScreen()),
+    );
+
+    if (result == true && mounted) {
+      await _loadMealSchedules();
+    }
   }
 
   Future<void> _loadTodayMedications() async {
@@ -81,6 +134,46 @@ class _HomeScreenState extends State<HomeScreen> {
         _medicationError = e.toString();
         _isLoadingMedications = false;
       });
+    }
+  }
+
+  final Set<String> _savingMedicationIds = {};
+
+  Future<void> _markMedicationTaken(Map<String, dynamic> schedule) async {
+    final scheduleId = schedule['id']?.toString();
+
+    if (scheduleId == null || scheduleId.isEmpty) {
+      _showPrototypeMessage('ID jadwal obat tidak ditemukan.');
+      return;
+    }
+
+    // Cegah pengguna menekan tombol berulang kali.
+    if (_savingMedicationIds.contains(scheduleId)) return;
+
+    setState(() {
+      _savingMedicationIds.add(scheduleId);
+    });
+
+    try {
+      await _medicationService.markMedicationAsTaken(scheduleId: scheduleId);
+
+      if (!mounted) return;
+
+      _showPrototypeMessage('Obat berhasil dicatat sebagai diminum.');
+
+      await _loadTodayMedications();
+    } catch (e) {
+      debugPrint('Gagal mencatat konsumsi obat: $e');
+
+      if (mounted) {
+        _showPrototypeMessage('Gagal mencatat konsumsi obat: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _savingMedicationIds.remove(scheduleId);
+        });
+      }
     }
   }
 
@@ -128,19 +221,96 @@ class _HomeScreenState extends State<HomeScreen> {
       );
   }
 
+  Future<void> _openEditCurrentSchedule(Map<String, dynamic> schedule) async {
+    final medicationId = schedule['medication_id']?.toString();
+    final scheduleId = schedule['id']?.toString();
+
+    if (medicationId == null ||
+        medicationId.isEmpty ||
+        scheduleId == null ||
+        scheduleId.isEmpty) {
+      _showPrototypeMessage('Data jadwal obat tidak lengkap.');
+      return;
+    }
+
+    final rawTime = schedule['schedule_time']?.toString() ?? '';
+    final parts = rawTime.split(':');
+
+    if (parts.length < 2) {
+      _showPrototypeMessage('Format waktu jadwal tidak valid.');
+      return;
+    }
+
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+
+    if (hour == null ||
+        minute == null ||
+        hour < 0 ||
+        hour > 23 ||
+        minute < 0 ||
+        minute > 59) {
+      _showPrototypeMessage('Waktu jadwal tidak valid.');
+      return;
+    }
+
+    final timeLabel = hour < 11
+        ? 'Pagi'
+        : hour < 15
+        ? 'Siang'
+        : hour < 18
+        ? 'Sore'
+        : 'Malam';
+
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditMedicationScreen(
+          medicationId: medicationId,
+          medicationName: schedule['medication_name']?.toString() ?? 'Obat',
+          dosage: schedule['medication_dose']?.toString() ?? '',
+          frequency: '1x Sehari',
+          mealInstruction: schedule['meal_instruction']?.toString() ?? '',
+          initialSchedules: [
+            EditableSchedule(
+              id: scheduleId,
+              label: timeLabel,
+              time:
+                  '${hour.toString().padLeft(2, '0')}.${minute.toString().padLeft(2, '0')}',
+              tag: 'Hari Ini',
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result == true && mounted) {
+      await _loadTodayMedications();
+    }
+  }
+
   Future<void> _openRescheduleForNextDose(
     Map<String, dynamic> missedSchedule,
   ) async {
     try {
       final medicationId = missedSchedule['medication_id']?.toString();
+      final missedScheduleId = missedSchedule['id']?.toString();
 
-      if (medicationId == null || medicationId.isEmpty) {
-        throw Exception('ID obat tidak ditemukan.');
+      if (medicationId == null ||
+          medicationId.isEmpty ||
+          missedScheduleId == null ||
+          missedScheduleId.isEmpty) {
+        throw Exception('Data jadwal obat tidak lengkap.');
       }
 
-      // Ambil seluruh jadwal obat, termasuk penyesuaian hari ini.
+      // Ambil jadwal obat beserta override yang berlaku hari ini.
       final schedules = await _medicationService
           .getMedicationSchedulesWithOverrides(medicationId);
+
+      if (schedules.isEmpty) {
+        _showPrototypeMessage('Tidak ada jadwal obat yang dapat diatur.');
+        return;
+      }
 
       int getMinutes(String? value) {
         final parts = (value ?? '').split(':');
@@ -156,38 +326,81 @@ class _HomeScreenState extends State<HomeScreen> {
         return hour * 60 + minute;
       }
 
-      final missedTime = getMinutes(
-        missedSchedule['schedule_time']?.toString(),
-      );
+      // Periksa riwayat agar jadwal yang sudah diminum tidak dipilih lagi.
+      final scheduleIds = schedules
+          .map((item) => item['id'].toString())
+          .toList();
 
-      // Cari jadwal aktif berikutnya setelah dosis terlewat.
+      final now = DateTime.now();
+      final startOfDay = DateTime(now.year, now.month, now.day);
+      final startOfTomorrow = startOfDay.add(const Duration(days: 1));
+
+      String formatTimestamp(DateTime value) {
+        return '${value.year.toString().padLeft(4, '0')}-'
+            '${value.month.toString().padLeft(2, '0')}-'
+            '${value.day.toString().padLeft(2, '0')} '
+            '${value.hour.toString().padLeft(2, '0')}:'
+            '${value.minute.toString().padLeft(2, '0')}:'
+            '${value.second.toString().padLeft(2, '0')}';
+      }
+
+      final histories = await Supabase.instance.client
+          .from('activity_histories')
+          .select('medication_schedule_id')
+          .inFilter('medication_schedule_id', scheduleIds)
+          .eq('status', 'taken')
+          .gte('activity_time', formatTimestamp(startOfDay))
+          .lt('activity_time', formatTimestamp(startOfTomorrow));
+
+      final takenScheduleIds = histories
+          .map<String>((item) => item['medication_schedule_id'].toString())
+          .toSet();
+
+      final currentMinutes = now.hour * 60 + now.minute;
+
+      // Pilih jadwal aktif yang belum diminum dan waktunya masih akan datang.
+      // Jadwal yang sedang terlewat tidak dipilih sebagai jadwal pengganti.
       final nextSchedules = schedules.where((item) {
         final itemId = item['id'].toString();
         final itemTime = getMinutes(item['schedule_time']?.toString());
 
-        return itemId != missedSchedule['id'].toString() &&
+        return itemId != missedScheduleId &&
             item['is_active'] != false &&
-            itemTime > missedTime;
+            !takenScheduleIds.contains(itemId) &&
+            itemTime > currentMinutes;
       }).toList();
 
       nextSchedules.sort((a, b) {
-        return getMinutes(a['schedule_time'].toString())
-            .compareTo(getMinutes(b['schedule_time'].toString()));
+        return getMinutes(a['schedule_time']?.toString())
+            .compareTo(getMinutes(b['schedule_time']?.toString()));
       });
 
       if (nextSchedules.isEmpty) {
         _showPrototypeMessage(
-          'Tidak ada jadwal berikutnya untuk obat ini hari ini.',
+          'Tidak ada jadwal berikutnya yang belum diminum hari ini.',
         );
         return;
       }
 
       final nextSchedule = nextSchedules.first;
-      final rawTime = nextSchedule['schedule_time'].toString();
+      final rawTime = nextSchedule['schedule_time']?.toString() ?? '';
       final parts = rawTime.split(':');
 
-      final hour = int.parse(parts[0]);
-      final minute = int.parse(parts[1]);
+      if (parts.length < 2) {
+        throw Exception('Format waktu jadwal berikutnya tidak valid.');
+      }
+
+      final hour = int.tryParse(parts[0]);
+      final minute = int.tryParse(parts[1]);
+
+      if (hour == null ||
+          minute == null ||
+          hour < 0 ||
+          hour > 23 ||
+          minute < 0 ||
+          minute > 59) {
+        throw Exception('Waktu jadwal berikutnya tidak valid.');
+      }
 
       final timeLabel = hour < 11
           ? 'Pagi'
@@ -203,11 +416,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ? '2x Sehari'
           : schedules.length == 3
           ? '3x Sehari'
-          : 'Sesuai Kebutuhan';
+          : 'Sesuai Jadwal';
 
       if (!mounted) return;
 
-      await Navigator.push(
+      final result = await Navigator.push<bool>(
         context,
         MaterialPageRoute(
           builder: (context) => EditMedicationScreen(
@@ -222,7 +435,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 id: nextSchedule['id'].toString(),
                 label: timeLabel,
                 time:
-                    '${hour.toString().padLeft(2, '0')}.${minute.toString().padLeft(2, '0')}',
+                    '${hour.toString().padLeft(2, '0')}.'
+                    '${minute.toString().padLeft(2, '0')}',
                 tag: 'Berikutnya',
               ),
             ],
@@ -230,14 +444,14 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
 
-      if (mounted) {
+      if (result == true && mounted) {
         await _loadTodayMedications();
       }
     } catch (e) {
       debugPrint('Gagal membuka pengaturan ulang: $e');
 
       if (mounted) {
-        _showPrototypeMessage('Gagal membuka jadwal berikutnya: $e');
+        _showPrototypeMessage('Gagal membuka pengaturan ulang: $e');
       }
     }
   }
@@ -291,15 +505,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             subtitle: 'Atur menu',
                             iconColor: _orange,
                             iconBackground: _orangeBackground,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const MealScheduleScreen(),
-                                ),
-                              );
-                            },
+                            onTap: _openMealSchedule,
                           ),
                         ),
                       ],
@@ -315,9 +521,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildTodayMedicationContent(),
                     const SizedBox(height: 18),
                     _RecommendationCard(
-                      onRecommendationTap: () => _showPrototypeMessage(
-                        'Halaman rekomendasi makanan belum terhubung.',
-                      ),
+                      onRecommendationTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const FoodRecommendationScreen(),
+                          ),
+                        );
+                      },
                       onAllergyTap: () => _showPrototypeMessage(
                         'Pemeriksaan alergi belum terhubung.',
                       ),
@@ -331,42 +543,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       trailing: 'Hari ini',
                     ),
                     const SizedBox(height: 8),
-                    Container(
-                      width: double.infinity,
-                      height: 118,
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: _borderColor),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 34,
-                            height: 34,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFF1F5F9),
-                              shape: BoxShape.circle,
-                            ),
-                            alignment: Alignment.center,
-                            child: const Icon(
-                              Icons.event_note_outlined,
-                              size: 17,
-                              color: _iconGrey,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Belum Ada Rutinitas Terjadwal',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Color(0xFF334155),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    _buildMealScheduleContent(),
                   ],
                 ),
               ),
@@ -382,6 +559,144 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         },
       ),
+    );
+  }
+
+  Widget _buildMealScheduleContent() {
+    if (_isLoadingMeals) {
+      return _mealStateContainer(
+        child: const Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+
+    if (_mealError != null) {
+      return _mealStateContainer(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Jadwal makan belum dapat dimuat.',
+              style: TextStyle(fontSize: 12, color: Color(0xFF334155)),
+            ),
+            TextButton.icon(
+              onPressed: _loadMealSchedules,
+              icon: const Icon(Icons.refresh, size: 17),
+              label: const Text('Coba lagi'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_mealSchedules.isEmpty) {
+      return _mealStateContainer(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.event_note_outlined, size: 22, color: _iconGrey),
+            const SizedBox(height: 7),
+            const Text(
+              'Belum Ada Rutinitas Makan',
+              style: TextStyle(fontSize: 12, color: Color(0xFF334155)),
+            ),
+            TextButton(
+              onPressed: _openMealSchedule,
+              child: const Text('Atur jadwal makan'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final schedules = [..._mealSchedules]
+      ..sort((a, b) {
+        return (a['schedule_time'] ?? '').toString().compareTo(
+          (b['schedule_time'] ?? '').toString(),
+        );
+      });
+
+    return Column(
+      children: schedules.map((schedule) {
+        final type = (schedule['meal_type'] ?? '').toString().toLowerCase();
+        final label = switch (type) {
+          'breakfast' || 'sarapan' => 'Sarapan',
+          'lunch' || 'makan siang' => 'Makan Siang',
+          'dinner' || 'makan malam' => 'Makan Malam',
+          _ => type.isEmpty ? 'Jadwal Makan' : type,
+        };
+        final rawTime = (schedule['schedule_time'] ?? '').toString();
+        final parts = rawTime.split(':');
+        final time = parts.length >= 2
+            ? '${parts[0].padLeft(2, '0')}:${parts[1].padLeft(2, '0')}'
+            : rawTime;
+
+        return Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: _borderColor),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFFF7ED),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.restaurant_outlined,
+                  color: _orange,
+                  size: 19,
+                ),
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.navy,
+                  ),
+                ),
+              ),
+              Text(
+                time,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _mealStateContainer({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 112),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _borderColor),
+      ),
+      child: Center(child: child),
     );
   }
 
@@ -474,8 +789,13 @@ class _HomeScreenState extends State<HomeScreen> {
     // - 00:00 sampai sebelum 05:00 setelah jadwal: ready.
     // - 05:00 sampai sebelum 60:00 setelah jadwal: late.
     // - 60:00 atau lebih setelah jadwal: missed.
+    final bool isTaken = schedule['is_taken'] == true;
+
     final MedicationStatus status;
-    if (elapsedSinceSchedule.isNegative) {
+
+    if (isTaken) {
+      status = MedicationStatus.taken;
+    } else if (elapsedSinceSchedule.isNegative) {
       status = MedicationStatus.upcoming;
     } else if (elapsedSinceSchedule < const Duration(minutes: 5)) {
       status = MedicationStatus.ready;
@@ -519,17 +839,13 @@ class _HomeScreenState extends State<HomeScreen> {
       status: status,
       lateMinutes: status == MedicationStatus.late ? lateMinutes : null,
       onTapCheck: () {
-        _showPrototypeMessage(
-          'Pencatatan obat diminum belum terhubung ke database.',
-        );
+        _markMedicationTaken(schedule);
       },
       onTapMinumSekarang: () {
-        _showPrototypeMessage(
-          'Pencatatan obat diminum belum terhubung ke database.',
-        );
+        _markMedicationTaken(schedule);
       },
       onTapAturJadwal: () {
-        _showPrototypeMessage('Pengaturan ulang jadwal belum terhubung.');
+        _openEditCurrentSchedule(schedule);
       },
       onTapAturUlang: () {
         _openRescheduleForNextDose(schedule);

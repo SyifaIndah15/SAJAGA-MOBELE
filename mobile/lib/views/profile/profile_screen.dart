@@ -23,7 +23,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // Data profil dari Supabase.
   String _userName = 'Memuat profil...';
   bool _isLoadingProfile = true;
-  bool _isSavingProfile = false;
+
 
   String get _userEmail =>
       Supabase.instance.client.auth.currentUser?.email ?? '';

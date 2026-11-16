@@ -3,7 +3,7 @@ import 'package:flutter/cupertino.dart';
 
 import '../widgets/meal_card.dart';
 import '../../config/app_constant.dart';
-import '../../utils/snackbar_helper.dart';
+import '../../services/meal_service.dart';
 
 class MealScheduleScreen extends StatefulWidget {
   const MealScheduleScreen({super.key});
@@ -13,6 +13,8 @@ class MealScheduleScreen extends StatefulWidget {
 }
 
 class _MealScheduleScreenState extends State<MealScheduleScreen> {
+  final MealService _mealService = MealService();
+
   TimeOfDay _breakfastTime = const TimeOfDay(hour: 7, minute: 0);
   TimeOfDay _lunchTime = const TimeOfDay(hour: 12, minute: 0);
   TimeOfDay _dinnerTime = const TimeOfDay(hour: 19, minute: 0);
@@ -21,8 +23,133 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
   bool _isLunchActive = true;
   bool _isDinnerActive = true;
 
+  bool _isLoading = true;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMealSchedules();
+  }
+
   String _formatTime(TimeOfDay time) {
-    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    return '${time.hour.toString().padLeft(2, '0')}:'
+        '${time.minute.toString().padLeft(2, '0')}';
+  }
+
+  TimeOfDay _parseTime(dynamic value, TimeOfDay fallback) {
+    if (value == null) return fallback;
+
+    final parts = value.toString().split(':');
+    if (parts.length < 2) return fallback;
+
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+
+    if (hour == null ||
+        minute == null ||
+        hour < 0 ||
+        hour > 23 ||
+        minute < 0 ||
+        minute > 59) {
+      return fallback;
+    }
+
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+
+  Future<void> _loadMealSchedules() async {
+    if (mounted) {
+      setState(() => _isLoading = true);
+    }
+
+    try {
+      final schedules = await _mealService.getMealSchedules();
+
+      TimeOfDay breakfast = const TimeOfDay(hour: 7, minute: 0);
+      TimeOfDay lunch = const TimeOfDay(hour: 12, minute: 0);
+      TimeOfDay dinner = const TimeOfDay(hour: 19, minute: 0);
+
+      bool breakfastActive = true;
+      bool lunchActive = true;
+      bool dinnerActive = true;
+
+      for (final schedule in schedules) {
+        final type = schedule['meal_type']?.toString();
+        final time = schedule['schedule_time'];
+        final active = schedule['is_active'] != false;
+
+        switch (type) {
+          case 'breakfast':
+            breakfast = _parseTime(time, breakfast);
+            breakfastActive = active;
+            break;
+          case 'lunch':
+            lunch = _parseTime(time, lunch);
+            lunchActive = active;
+            break;
+          case 'dinner':
+            dinner = _parseTime(time, dinner);
+            dinnerActive = active;
+            break;
+        }
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _breakfastTime = breakfast;
+        _lunchTime = lunch;
+        _dinnerTime = dinner;
+        _isBreakfastActive = breakfastActive;
+        _isLunchActive = lunchActive;
+        _isDinnerActive = dinnerActive;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text('Gagal memuat jadwal makan: $e')),
+        );
+    }
+  }
+
+  Future<void> _handleSave() async {
+    if (_isSaving || _isLoading) return;
+
+    setState(() => _isSaving = true);
+
+    try {
+      await _mealService.saveAllMealSchedules(
+        breakfastTime: _formatTime(_breakfastTime),
+        breakfastActive: _isBreakfastActive,
+        lunchTime: _formatTime(_lunchTime),
+        lunchActive: _isLunchActive,
+        dinnerTime: _formatTime(_dinnerTime),
+        dinnerActive: _isDinnerActive,
+      );
+
+      if (!mounted) return;
+
+      // Mengirim true agar Home memuat ulang jadwal dari Supabase.
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text('Gagal menyimpan jadwal makan: $e')),
+        );
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
   }
 
   @override
@@ -32,7 +159,7 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.white,
         elevation: 0,
-        centerTitle: false, // <-- Judul di kiri, bukan tengah
+        centerTitle: false,
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back_ios,
@@ -75,14 +202,14 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
               ),
             ),
             onPressed: () {
-              // TODO: Nanti navigasi ke ProfileScreen
+              // Navigasi profil belum diubah.
             },
           ),
           const SizedBox(width: 8),
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -96,7 +223,7 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
             ),
             const SizedBox(height: 4),
             const Text(
-              'Jadwal dan rekomendasi menu otomatis',
+              'Atur waktu pengingat makan harian Anda',
               style: TextStyle(
                 color: AppColors.grey,
                 fontSize: 12,
@@ -105,83 +232,95 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
             ),
             const SizedBox(height: 20),
             Expanded(
-              child: ListView(
-                children: [
-                  MealCard(
-                    title: 'Sarapan',
-                    subtitle: 'Pukul santap pagi',
-                    icon: Icons.wb_sunny_outlined,
-                    iconColor: Colors.orange,
-                    time: _formatTime(_breakfastTime),
-                    isActive: _isBreakfastActive,
-                    onTimeTap: () => _showTimePicker(
-                      'Sarapan',
-                      _breakfastTime,
-                      (newTime) => setState(() => _breakfastTime = newTime),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView(
+                      children: [
+                        MealCard(
+                          title: 'Sarapan',
+                          subtitle: 'Pukul santap pagi',
+                          icon: Icons.wb_sunny_outlined,
+                          iconColor: Colors.orange,
+                          time: _formatTime(_breakfastTime),
+                          isActive: _isBreakfastActive,
+                          onTimeTap: () => _showTimePicker(
+                            'Sarapan',
+                            _breakfastTime,
+                            (value) => setState(() => _breakfastTime = value),
+                          ),
+                          onToggleChanged: (value) {
+                            setState(() => _isBreakfastActive = value);
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        MealCard(
+                          title: 'Makan Siang',
+                          subtitle: 'Pukul jeda siang',
+                          icon: Icons.wb_sunny,
+                          iconColor: AppColors.secondary,
+                          time: _formatTime(_lunchTime),
+                          isActive: _isLunchActive,
+                          onTimeTap: () => _showTimePicker(
+                            'Makan Siang',
+                            _lunchTime,
+                            (value) => setState(() => _lunchTime = value),
+                          ),
+                          onToggleChanged: (value) {
+                            setState(() => _isLunchActive = value);
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        MealCard(
+                          title: 'Makan Malam',
+                          subtitle: 'Pukul santap tenang',
+                          icon: Icons.nightlight_round,
+                          iconColor: AppColors.navy,
+                          time: _formatTime(_dinnerTime),
+                          isActive: _isDinnerActive,
+                          onTimeTap: () => _showTimePicker(
+                            'Makan Malam',
+                            _dinnerTime,
+                            (value) => setState(() => _dinnerTime = value),
+                          ),
+                          onToggleChanged: (value) {
+                            setState(() => _isDinnerActive = value);
+                          },
+                        ),
+                      ],
                     ),
-                    onToggleChanged: (value) =>
-                        setState(() => _isBreakfastActive = value),
-                  ),
-                  const SizedBox(height: 12),
-                  MealCard(
-                    title: 'Makan Siang',
-                    subtitle: 'Pukul jeda siang',
-                    icon: Icons.wb_sunny,
-                    iconColor: AppColors.secondary,
-                    time: _formatTime(_lunchTime),
-                    isActive: _isLunchActive,
-                    onTimeTap: () => _showTimePicker(
-                      'Makan Siang',
-                      _lunchTime,
-                      (newTime) => setState(() => _lunchTime = newTime),
-                    ),
-                    onToggleChanged: (value) =>
-                        setState(() => _isLunchActive = value),
-                  ),
-                  const SizedBox(height: 12),
-                  MealCard(
-                    title: 'Makan Malam',
-                    subtitle: 'Pukul santap tenang',
-                    icon: Icons.nightlight_round,
-                    iconColor: AppColors.navy,
-                    time: _formatTime(_dinnerTime),
-                    isActive: _isDinnerActive,
-                    onTimeTap: () => _showTimePicker(
-                      'Makan Malam',
-                      _dinnerTime,
-                      (newTime) => setState(() => _dinnerTime = newTime),
-                    ),
-                    onToggleChanged: (value) =>
-                        setState(() => _isDinnerActive = value),
-                  ),
-                ],
-              ),
             ),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  SnackbarHelper.showSuccess(
-                    context,
-                    'Pengaturan berhasil disimpan!',
-                  );
-                },
+                onPressed: (_isLoading || _isSaving) ? null : _handleSave,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
+                  disabledBackgroundColor: AppColors.grey,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.0),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'SIMPAN PENGATURAN',
-                  style: TextStyle(
-                    color: AppColors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                  ),
-                ),
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 21,
+                        height: 21,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppColors.white,
+                          ),
+                        ),
+                      )
+                    : const Text(
+                        'SIMPAN PENGATURAN',
+                        style: TextStyle(
+                          color: AppColors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
               ),
             ),
           ],
@@ -195,30 +334,29 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
     TimeOfDay initialTime,
     ValueChanged<TimeOfDay> onSelected,
   ) {
-    TimeOfDay tempTime = initialTime;
+    int selectedHour = initialTime.hour;
+    int selectedMinute = initialTime.minute;
 
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // <-- PENTING: biar bisa scroll
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) {
-        return SingleChildScrollView(
-          // <-- Bungkus dengan ini
-          child: StatefulBuilder(
-            builder: (context, setModalState) {
-              return Padding(
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setModalState) {
+            return SingleChildScrollView(
+              child: Padding(
                 padding: EdgeInsets.only(
                   left: 20,
                   right: 20,
                   top: 16,
-                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                  bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 16,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Header
                     Row(
                       children: [
                         Container(
@@ -263,18 +401,14 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
                             color: AppColors.grey,
                             size: 20,
                           ),
-                          onPressed: () => Navigator.pop(context),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
+                          onPressed: () => Navigator.pop(sheetContext),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8), // Kurangi dari 12
-                    // Time Picker - KURANGI TINGGI dari 120 jadi 100
+                    const SizedBox(height: 8),
                     SizedBox(
-                      height: 100,
+                      height: 110,
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Expanded(
                             child: Column(
@@ -291,15 +425,12 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
                                   child: CupertinoPicker(
                                     scrollController:
                                         FixedExtentScrollController(
-                                          initialItem: tempTime.hour,
+                                          initialItem: selectedHour,
                                         ),
-                                    itemExtent: 32, // Kurangi dari 36
+                                    itemExtent: 32,
                                     onSelectedItemChanged: (index) {
                                       setModalState(() {
-                                        tempTime = TimeOfDay(
-                                          hour: index,
-                                          minute: tempTime.minute,
-                                        );
+                                        selectedHour = index;
                                       });
                                     },
                                     children: List.generate(
@@ -342,15 +473,12 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
                                   child: CupertinoPicker(
                                     scrollController:
                                         FixedExtentScrollController(
-                                          initialItem: tempTime.minute,
+                                          initialItem: selectedMinute,
                                         ),
-                                    itemExtent: 32, // Kurangi dari 36
+                                    itemExtent: 32,
                                     onSelectedItemChanged: (index) {
                                       setModalState(() {
-                                        tempTime = TimeOfDay(
-                                          hour: tempTime.hour,
-                                          minute: index,
-                                        );
+                                        selectedMinute = index;
                                       });
                                     },
                                     children: List.generate(
@@ -373,13 +501,12 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 8), // Kurangi dari 12
-                    // Info Box
+                    const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: AppColors.lightBlue,
-                        borderRadius: BorderRadius.circular(12.0),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         children: [
@@ -391,7 +518,7 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Waktu ${mealName.toLowerCase()} otomatis disinkronkan ke kalender metabolisme dan menu saji.',
+                              'Waktu pengingat $mealName akan disimpan sebagai jadwal harian.',
                               style: const TextStyle(
                                 color: AppColors.primary,
                                 fontSize: 11,
@@ -401,22 +528,24 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 8), // Kurangi dari 12
-                    // Tombol Simpan
+                    const SizedBox(height: 8),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          onSelected(tempTime);
-                          Navigator.pop(context);
+                          onSelected(
+                            TimeOfDay(
+                              hour: selectedHour,
+                              minute: selectedMinute,
+                            ),
+                          );
+                          Navigator.pop(sheetContext);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.secondary,
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 12,
-                          ), // Kurangi dari 14
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.0),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                         child: const Text(
@@ -430,20 +559,18 @@ class _MealScheduleScreenState extends State<MealScheduleScreen> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    // Tombol Batal
                     TextButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () => Navigator.pop(sheetContext),
                       child: const Text(
                         'Batal',
                         style: TextStyle(color: AppColors.grey, fontSize: 14),
                       ),
                     ),
-                    const SizedBox(height: 8),
                   ],
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         );
       },
     );

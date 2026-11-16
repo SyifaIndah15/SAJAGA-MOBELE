@@ -577,6 +577,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
   }
 
   // Simpan data obat dan jadwal ke Supabase.
+
   Future<void> _saveMedication() async {
     if (_isSaving) return;
 
@@ -590,9 +591,8 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
     }
 
     final supabase = Supabase.instance.client;
-    final user = supabase.auth.currentUser;
 
-    if (user == null) {
+    if (supabase.auth.currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Sesi login tidak ditemukan. Silakan login kembali.'),
@@ -601,41 +601,64 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
       return;
     }
 
+    final scheduleRows = <Map<String, dynamic>>[];
+
+    final uniqueTimes = <String>{};
+
+    for (final schedule in _schedules) {
+      final parts = schedule.time.replaceAll('.', ':').split(':');
+
+      if (parts.length != 2) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Format jam obat tidak valid.')),
+        );
+        return;
+      }
+
+      final hour = int.tryParse(parts[0]);
+      final minute = int.tryParse(parts[1]);
+
+      if (hour == null ||
+          minute == null ||
+          hour < 0 ||
+          hour > 23 ||
+          minute < 0 ||
+          minute > 59) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Jam obat tidak valid.')));
+        return;
+      }
+
+      final formattedTime =
+          '${hour.toString().padLeft(2, '0')}:'
+          '${minute.toString().padLeft(2, '0')}:00';
+
+      if (!uniqueTimes.add(formattedTime)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Terdapat jam minum obat yang sama.')),
+        );
+        return;
+      }
+
+      scheduleRows.add({
+        'schedule_time': formattedTime,
+        'meal_instruction': _selectedMealInstruction,
+      });
+    }
+
     setState(() => _isSaving = true);
-    String? medicationId;
 
     try {
-      // 1. Simpan data utama obat.
-      final medication = await supabase
-          .from('medications')
-          .insert({
-            'user_id': user.id,
-            'name': _nameController.text.trim(),
-            'dose': _doseController.text.trim(),
-            'days': _durationDays,
-          })
-          .select('id')
-          .single();
-
-      medicationId = medication['id'].toString();
-
-      // 2. Simpan jadwal minum obat.
-      final scheduleRows = _schedules.map((schedule) {
-        final timeParts = schedule.time.split('.');
-        final hour = timeParts[0].padLeft(2, '0');
-        final minute = timeParts.length > 1
-            ? timeParts[1].padLeft(2, '0')
-            : '00';
-
-        return <String, dynamic>{
-          'medication_id': medicationId,
-          'schedule_time': '$hour:$minute:00',
-          'meal_instruction': _selectedMealInstruction,
-          'is_active': true,
-        };
-      }).toList();
-
-      await supabase.from('medication_schedules').insert(scheduleRows);
+      await supabase.rpc(
+        'create_medication_with_schedules',
+        params: {
+          'p_name': _nameController.text.trim(),
+          'p_dose': _doseController.text.trim(),
+          'p_days': _durationDays,
+          'p_schedules': scheduleRows,
+        },
+      );
 
       if (!mounted) return;
 
@@ -648,17 +671,6 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
 
       Navigator.pop(context, true);
     } catch (error) {
-      // Bersihkan data obat jika penyimpanan jadwal gagal.
-      if (medicationId != null) {
-        try {
-          await supabase.from('medications').delete().eq('id', medicationId);
-        } catch (rollbackError) {
-          debugPrint(
-            'Gagal membersihkan data obat setelah error: $rollbackError',
-          );
-        }
-      }
-
       debugPrint('Gagal menyimpan jadwal obat: $error');
 
       if (!mounted) return;
@@ -853,11 +865,11 @@ class _ScheduleTimeItem extends StatelessWidget {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(context).colorScheme.copyWith(
-                  primary: AppColors.primary,
-                  onPrimary: Colors.white,
-                  surface: Colors.white,
-                  onSurface: AppColors.navy,
-                ),
+              primary: AppColors.primary,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: AppColors.navy,
+            ),
           ),
           child: child!,
         );
@@ -879,9 +891,7 @@ class _ScheduleTimeItem extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AppColors.lightBlue.withOpacity(0.55),
-        ),
+        border: Border.all(color: AppColors.lightBlue.withOpacity(0.55)),
       ),
       child: Row(
         children: [
@@ -894,11 +904,7 @@ class _ScheduleTimeItem extends StatelessWidget {
                   : AppColors.lightBlue,
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              _getIcon(),
-              color: _getIconColor(),
-              size: 18,
-            ),
+            child: Icon(_getIcon(), color: _getIconColor(), size: 18),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -959,10 +965,7 @@ class _ScheduleTimeItem extends StatelessWidget {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 9,
-              vertical: 5,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
             decoration: BoxDecoration(
               color: AppColors.lightBlue.withOpacity(0.75),
               borderRadius: BorderRadius.circular(12),
@@ -984,11 +987,7 @@ class _ScheduleTimeItem extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               child: const Padding(
                 padding: EdgeInsets.all(4),
-                child: Icon(
-                  Icons.close,
-                  color: AppColors.grey,
-                  size: 17,
-                ),
+                child: Icon(Icons.close, color: AppColors.grey, size: 17),
               ),
             ),
           ],

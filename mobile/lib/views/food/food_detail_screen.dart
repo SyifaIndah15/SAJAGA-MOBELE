@@ -1,30 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../../config/app_constant.dart';
-import '../../utils/snackbar_helper.dart';
 import '../widgets/food_card.dart';
 
-class FoodDetailScreen extends StatefulWidget {
+class FoodDetailScreen extends StatelessWidget {
   final FoodItem food;
 
-  const FoodDetailScreen({
-    super.key,
-    required this.food,
-  });
-
-  @override
-  State<FoodDetailScreen> createState() =>
-      _FoodDetailScreenState();
-}
-
-class _FoodDetailScreenState
-    extends State<FoodDetailScreen> {
-  bool _isFavorite = false;
+  const FoodDetailScreen({super.key, required this.food});
 
   @override
   Widget build(BuildContext context) {
-    final food = widget.food;
-
     return Scaffold(
       backgroundColor: AppColors.background,
 
@@ -38,10 +23,7 @@ class _FoodDetailScreenState
 
             leading: IconButton(
               onPressed: () => Navigator.maybePop(context),
-              icon: const Icon(
-                Icons.arrow_back_ios_new_rounded,
-                size: 18,
-              ),
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
             ),
 
             title: const Text(
@@ -54,32 +36,6 @@ class _FoodDetailScreenState
             ),
 
             actions: [
-              IconButton(
-                tooltip: 'Favorit',
-                onPressed: () {
-                  setState(() {
-                    _isFavorite = !_isFavorite;
-                  });
-
-                  SnackbarHelper.showSuccess(
-                    context,
-                    _isFavorite
-                        ? 'Menu ditambahkan ke favorit.'
-                        : 'Menu dihapus dari favorit.',
-                  );
-                },
-
-                icon: Icon(
-                  _isFavorite
-                      ? Icons.favorite_rounded
-                      : Icons.favorite_border_rounded,
-                  color: _isFavorite
-                      ? Colors.redAccent
-                      : AppColors.navy,
-                  size: 21,
-                ),
-              ),
-
               Padding(
                 padding: const EdgeInsets.only(right: 14),
                 child: CircleAvatar(
@@ -97,9 +53,7 @@ class _FoodDetailScreenState
 
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                14, 0, 14, 28,
-              ),
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 28),
 
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,10 +67,6 @@ class _FoodDetailScreenState
                   const SizedBox(height: 13),
 
                   _buildNutrition(food),
-
-                  const SizedBox(height: 12),
-
-                  _buildPreparation(food),
 
                   const SizedBox(height: 12),
 
@@ -156,9 +106,7 @@ class _FoodDetailScreenState
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
 
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 13,
-                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 13),
 
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(13),
@@ -193,8 +141,7 @@ class _FoodDetailScreenState
                 : Image.network(
                     food.imageUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        _imageFallback(),
+                    errorBuilder: (_, __, ___) => _imageFallback(),
                   ),
           ),
 
@@ -204,7 +151,7 @@ class _FoodDetailScreenState
             child: _pill(
               Icons.restaurant_rounded,
               food.category,
-              background: Colors.white.withOpacity(0.94),
+              background: Colors.white.withValues(alpha: 0.94),
               foreground: AppColors.primary,
             ),
           ),
@@ -215,7 +162,7 @@ class _FoodDetailScreenState
             child: _pill(
               Icons.local_fire_department_rounded,
               '${food.calories} kkal',
-              background: Colors.white.withOpacity(0.94),
+              background: Colors.white.withValues(alpha: 0.94),
               foreground: AppColors.primary,
             ),
           ),
@@ -278,9 +225,7 @@ class _FoodDetailScreenState
         const SizedBox(height: 5),
 
         Text(
-          food.summary.isNotEmpty
-              ? food.summary
-              : food.description,
+          food.summary.isNotEmpty ? food.summary : food.description,
 
           style: const TextStyle(
             color: AppColors.grey,
@@ -295,109 +240,17 @@ class _FoodDetailScreenState
   // NUTRITION INFORMATION
 
   Widget _buildNutrition(FoodItem food) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        vertical: 13,
-        horizontal: 8,
-      ),
-
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFEAF0F6),
-        ),
-      ),
-
-      child: Row(
-        children: [
-          _nutritionItem(
-            'Energi',
-            '${food.calories}',
-            'kkal',
-          ),
-
-          _nutritionItem(
-            'Karbo',
-            '${food.carbs}',
-            'g',
-          ),
-
-          _nutritionItem(
-            'Protein',
-            '${food.protein}',
-            'g',
-          ),
-
-          _nutritionItem(
-            'Lemak',
-            '${food.fat}',
-            'g',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _nutritionItem(
-    String label,
-    String value,
-    String unit,
-  ) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.grey,
-              fontSize: 9,
-            ),
-          ),
-
-          const SizedBox(height: 4),
-
-          Text(
-            value,
-            style: const TextStyle(
-              color: AppColors.navy,
-              fontSize: 17,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-
-          Text(
-            unit,
-            style: const TextStyle(
-              color: AppColors.grey,
-              fontSize: 8,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // PREPARATION TIME
-
-  Widget _buildPreparation(FoodItem food) {
     return _sectionCard(
-      icon: Icons.timer_outlined,
-
-      title:
-          'Estimasi Waktu Persiapan: ${food.prepMinutes} Menit',
-
-      child: const Text(
-        'Informasi ini merupakan perkiraan waktu menyiapkan menu, bukan aturan medis atau anjuran waktu konsumsi obat.',
-
-        style: TextStyle(
-          color: AppColors.grey,
-          fontSize: 9,
-          height: 1.5,
+      icon: Icons.local_fire_department_outlined,
+      title: 'Informasi Energi',
+      child: Text(
+        '${food.calories} kkal',
+        style: const TextStyle(
+          color: AppColors.navy,
+          fontSize: 17,
+          fontWeight: FontWeight.w700,
         ),
       ),
-
-      tint: const Color(0xFFEAF7FF),
     );
   }
 
@@ -406,16 +259,12 @@ class _FoodDetailScreenState
   Widget _buildIngredients(FoodItem food) {
     return _sectionCard(
       icon: Icons.soup_kitchen_outlined,
-      title: 'Bahan-Bahan Alami',
+      title: 'Informasi Bahan',
 
       child: food.ingredients.isEmpty
-          ? _emptyText(
-              'Informasi bahan belum tersedia.',
-            )
+          ? _emptyText('Informasi bahan belum tersedia.')
           : Column(
-              children: food.ingredients
-                  .map((item) => _bullet(item))
-                  .toList(),
+              children: food.ingredients.map((item) => _bullet(item)).toList(),
             ),
     );
   }
@@ -428,13 +277,9 @@ class _FoodDetailScreenState
       title: 'Manfaat & Pencernaan',
 
       child: food.benefits.isEmpty
-          ? _emptyText(
-              'Informasi manfaat belum tersedia.',
-            )
+          ? _emptyText('Informasi manfaat belum tersedia.')
           : Column(
-              children: food.benefits
-                  .map((item) => _bullet(item))
-                  .toList(),
+              children: food.benefits.map((item) => _bullet(item)).toList(),
             ),
     );
   }
@@ -455,16 +300,11 @@ class _FoodDetailScreenState
 
       child: food.cautions.isEmpty
           ? _emptyText(
-              'Periksa kandungan bahan dan sesuaikan menu dengan kebutuhan pribadi.',
+              'Informasi alergi dan pantangan belum tersedia. Jangan menganggap menu ini bebas alergen.',
             )
           : Column(
               children: food.cautions
-                  .map(
-                    (item) => _bullet(
-                      item,
-                      color: const Color(0xFFB45353),
-                    ),
-                  )
+                  .map((item) => _bullet(item, color: const Color(0xFFB45353)))
                   .toList(),
             ),
     );
@@ -487,9 +327,7 @@ class _FoodDetailScreenState
       decoration: BoxDecoration(
         color: tint,
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-          color: const Color(0xFFEAF0F6),
-        ),
+        border: Border.all(color: const Color(0xFFEAF0F6)),
       ),
 
       child: Column(
@@ -497,11 +335,7 @@ class _FoodDetailScreenState
         children: [
           Row(
             children: [
-              Icon(
-                icon,
-                color: iconColor,
-                size: 16,
-              ),
+              Icon(icon, color: iconColor, size: 16),
 
               const SizedBox(width: 7),
 
@@ -528,10 +362,7 @@ class _FoodDetailScreenState
 
   // BULLET ITEM
 
-  Widget _bullet(
-    String text, {
-    Color color = AppColors.grey,
-  }) {
+  Widget _bullet(String text, {Color color = AppColors.grey}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 7),
 
@@ -541,10 +372,7 @@ class _FoodDetailScreenState
           Container(
             width: 5,
             height: 5,
-            margin: const EdgeInsets.only(
-              top: 5,
-              right: 8,
-            ),
+            margin: const EdgeInsets.only(top: 5, right: 8),
 
             decoration: BoxDecoration(
               color: AppColors.secondary,
@@ -555,11 +383,7 @@ class _FoodDetailScreenState
           Expanded(
             child: Text(
               text,
-              style: TextStyle(
-                color: color,
-                fontSize: 9,
-                height: 1.45,
-              ),
+              style: TextStyle(color: color, fontSize: 9, height: 1.45),
             ),
           ),
         ],
@@ -570,11 +394,7 @@ class _FoodDetailScreenState
   Widget _emptyText(String text) {
     return Text(
       text,
-      style: const TextStyle(
-        color: AppColors.grey,
-        fontSize: 9,
-        height: 1.45,
-      ),
+      style: const TextStyle(color: AppColors.grey, fontSize: 9, height: 1.45),
     );
   }
 
@@ -587,10 +407,7 @@ class _FoodDetailScreenState
     required Color foreground,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 9,
-        vertical: 6,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
 
       decoration: BoxDecoration(
         color: background,
@@ -600,11 +417,7 @@ class _FoodDetailScreenState
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 10,
-            color: foreground,
-          ),
+          Icon(icon, size: 10, color: foreground),
 
           const SizedBox(width: 4),
 

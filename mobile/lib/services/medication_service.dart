@@ -90,6 +90,29 @@ class MedicationService {
     }
 
     // Mengurutkan berdasarkan waktu terbaru.
+    // Ambil aktivitas konsumsi obat untuk tanggal hari ini.
+    final histories = await _supabase
+        .from('activity_histories')
+        .select('medication_schedule_id')
+        .inFilter('medication_schedule_id', scheduleIds)
+        .eq('status', 'taken')
+        .gte('activity_time', '$today 00:00:00')
+        .lt(
+          'activity_time',
+          '${DateTime(now.year, now.month, now.day + 1).year}-'
+              '${DateTime(now.year, now.month, now.day + 1).month.toString().padLeft(2, '0')}-'
+              '${DateTime(now.year, now.month, now.day + 1).day.toString().padLeft(2, '0')} 00:00:00',
+        );
+
+    final takenScheduleIds = histories
+        .map((item) => item['medication_schedule_id'].toString())
+        .toSet();
+
+    for (final schedule in result) {
+      schedule['is_taken'] = takenScheduleIds.contains(
+        schedule['id'].toString(),
+      );
+    }
     result.sort((a, b) {
       return a['schedule_time'].toString().compareTo(
         b['schedule_time'].toString(),
@@ -188,6 +211,28 @@ class MedicationService {
         '${now.month.toString().padLeft(2, '0')}-'
         '${now.day.toString().padLeft(2, '0')}';
 
+    // Periksa jadwal yang akan diubah.
+    final schedule = await _supabase
+        .from('medication_schedules')
+        .select('id, medication_id')
+        .eq('id', scheduleId)
+        .maybeSingle();
+
+    if (schedule == null) {
+      throw Exception('Jadwal obat tidak ditemukan.');
+    }
+
+    // Pastikan jadwal merupakan milik pengguna yang login.
+    final medication = await _supabase
+        .from('medications')
+        .select('id')
+        .eq('id', schedule['medication_id'])
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+    if (medication == null) {
+      throw Exception('Anda tidak memiliki akses ke jadwal obat ini.');
+    }
     // Simpan hanya satu jadwal yang dipilih.
     await _supabase.from('medication_schedule_overrides').upsert({
       'medication_schedule_id': scheduleId,
@@ -247,5 +292,55 @@ class MedicationService {
 
       return result;
     }).toList();
+  }
+
+  Future<void> markMedicationAsTaken({required String scheduleId}) async {
+    final user = _supabase.auth.currentUser;
+
+    if (user == null) {
+      throw Exception('Pengguna belum login.');
+    }
+
+    // Ambil jadwal berdasarkan ID.
+    final schedule = await _supabase
+        .from('medication_schedules')
+        .select('id, medication_id')
+        .eq('id', scheduleId)
+        .maybeSingle();
+
+    if (schedule == null) {
+      throw Exception('Jadwal obat tidak ditemukan.');
+    }
+
+    // Pastikan obat merupakan milik pengguna yang login.
+    final medication = await _supabase
+        .from('medications')
+        .select('id')
+        .eq('id', schedule['medication_id'])
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+    if (medication == null) {
+      throw Exception('Pengguna tidak memiliki akses ke jadwal obat ini.');
+    }
+
+    // Catat waktu aktual konsumsi berdasarkan waktu lokal perangkat.
+    final now = DateTime.now();
+
+    final activityTime =
+        '${now.year.toString().padLeft(4, '0')}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')} '
+        '${now.hour.toString().padLeft(2, '0')}:'
+        '${now.minute.toString().padLeft(2, '0')}:'
+        '${now.second.toString().padLeft(2, '0')}';
+
+    // Simpan aktivitas konsumsi obat.
+    await _supabase.from('activity_histories').insert({
+      'medication_schedule_id': scheduleId,
+      'meal_schedule_id': null,
+      'status': 'taken',
+      'activity_time': activityTime,
+    });
   }
 }
