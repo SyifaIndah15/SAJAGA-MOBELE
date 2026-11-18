@@ -40,6 +40,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoadingMedications = true;
   String? _medicationError;
   Timer? _statusRefreshTimer;
+  final Set<String> _recordedMealIds = {};
+  final Set<String> _savingMealIds = {};
 
   @override
   void initState() {
@@ -78,12 +80,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       final schedules = await _mealService.getMealSchedules();
+
+      final recordedIds = await _mealService.getTodayRecordedMealScheduleIds();
+
       if (!mounted) return;
 
       setState(() {
         _mealSchedules = schedules
             .where((item) => item['is_active'] != false)
             .toList();
+
+        _recordedMealIds
+          ..clear()
+          ..addAll(recordedIds);
+
         _isLoadingMeals = false;
       });
     } catch (e) {
@@ -108,6 +118,56 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _markMealTaken(Map<String, dynamic> schedule) async {
+    final scheduleId = schedule['id']?.toString();
+
+    if (scheduleId == null || scheduleId.isEmpty) {
+      _showPrototypeMessage('ID jadwal makan tidak ditemukan.');
+      return;
+    }
+
+    if (_recordedMealIds.contains(scheduleId) ||
+        _savingMealIds.contains(scheduleId)) {
+      return;
+    }
+
+    setState(() {
+      _savingMealIds.add(scheduleId);
+    });
+
+    try {
+      final success = await _mealService.recordMealActivity(
+        mealScheduleId: scheduleId,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        setState(() {
+          _recordedMealIds.add(scheduleId);
+        });
+
+        _showPrototypeMessage('Aktivitas makan berhasil dicatat.');
+      } else {
+        await _loadMealSchedules();
+
+        _showPrototypeMessage('Jadwal makan sudah tercatat hari ini.');
+      }
+    } catch (e) {
+      debugPrint('Gagal mencatat aktivitas makan: $e');
+
+      if (mounted) {
+        _showPrototypeMessage('Gagal mencatat aktivitas makan: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _savingMealIds.remove(scheduleId);
+        });
+      }
+    }
+  }
+
   Future<void> _loadTodayMedications() async {
     if (mounted) {
       setState(() {
@@ -122,7 +182,10 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
 
       setState(() {
-        _medicationSchedules = schedules;
+        _medicationSchedules = schedules
+            .where((item) => item['is_skipped'] != true)
+            .toList();
+
         _isLoadingMedications = false;
       });
     } catch (e) {
@@ -167,6 +230,69 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (mounted) {
         _showPrototypeMessage('Gagal mencatat konsumsi obat: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _savingMedicationIds.remove(scheduleId);
+        });
+      }
+    }
+  }
+
+  Future<void> _markMedicationSkipped(Map<String, dynamic> schedule) async {
+    final scheduleId = schedule['id']?.toString();
+
+    if (scheduleId == null || scheduleId.isEmpty) {
+      _showPrototypeMessage('ID jadwal obat tidak ditemukan.');
+      return;
+    }
+
+    if (_savingMedicationIds.contains(scheduleId)) return;
+
+    // Konfirmasi sebelum melewati jadwal.
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Lewati Jadwal Obat?'),
+        content: const Text(
+          'Jadwal ini akan ditandai sebagai dilewati dan '
+          'tidak lagi muncul sebagai pengingat hari ini. '
+          'Jadwal ini tidak akan dicatat sebagai obat yang diminum.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Lewati Jadwal'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() {
+      _savingMedicationIds.add(scheduleId);
+    });
+
+    try {
+      await _medicationService.markMedicationAsSkipped(scheduleId: scheduleId);
+
+      if (!mounted) return;
+
+      _showPrototypeMessage('Jadwal obat berhasil dilewati.');
+
+      await _loadTodayMedications();
+    } catch (e) {
+      debugPrint('Gagal melewati jadwal obat: $e');
+
+      if (mounted) {
+        _showPrototypeMessage('Gagal melewati jadwal obat: $e');
       }
     } finally {
       if (mounted) {
@@ -565,13 +691,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildMealScheduleContent() {
     if (_isLoadingMeals) {
       return _mealStateContainer(
-        child: const Center(
-          child: SizedBox(
-            width: 22,
-            height: 22,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        ),
+        child: const CircularProgressIndicator(strokeWidth: 2),
       );
     }
 
@@ -580,10 +700,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Jadwal makan belum dapat dimuat.',
-              style: TextStyle(fontSize: 12, color: Color(0xFF334155)),
-            ),
+            const Text('Jadwal makan belum dapat dimuat.'),
             TextButton.icon(
               onPressed: _loadMealSchedules,
               icon: const Icon(Icons.refresh, size: 17),
@@ -623,23 +740,32 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Column(
       children: schedules.map((schedule) {
+        final scheduleId = schedule['id']?.toString() ?? '';
+
         final type = (schedule['meal_type'] ?? '').toString().toLowerCase();
+
         final label = switch (type) {
           'breakfast' || 'sarapan' => 'Sarapan',
           'lunch' || 'makan siang' => 'Makan Siang',
           'dinner' || 'makan malam' => 'Makan Malam',
           _ => type.isEmpty ? 'Jadwal Makan' : type,
         };
+
         final rawTime = (schedule['schedule_time'] ?? '').toString();
+
         final parts = rawTime.split(':');
+
         final time = parts.length >= 2
             ? '${parts[0].padLeft(2, '0')}:${parts[1].padLeft(2, '0')}'
             : rawTime;
 
+        final isRecorded = _recordedMealIds.contains(scheduleId);
+        final isSaving = _savingMealIds.contains(scheduleId);
+
         return Container(
           width: double.infinity,
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: AppColors.white,
             borderRadius: BorderRadius.circular(14),
@@ -661,24 +787,97 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(width: 11),
+
               Expanded(
-                child: Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.navy,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.navy,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      time,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              if (isRecorded)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 7,
                   ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDCFCE7),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.check_circle,
+                        size: 14,
+                        color: Color(0xFF16A34A),
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        'Tercatat',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF15803D),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                FilledButton(
+                  onPressed: isSaving ? null : () => _markMealTaken(schedule),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    disabledBackgroundColor: AppColors.primary.withValues(
+                      alpha: 0.5,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 9,
+                    ),
+                    minimumSize: const Size(0, 36),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: isSaving
+                      ? const SizedBox(
+                          width: 15,
+                          height: 15,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Sudah Makan',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
-              ),
-              Text(
-                time,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
-                ),
-              ),
             ],
           ),
         );
@@ -849,6 +1048,9 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       onTapAturUlang: () {
         _openRescheduleForNextDose(schedule);
+      },
+      onTapSkip: () {
+        _markMedicationSkipped(schedule);
       },
     );
   }

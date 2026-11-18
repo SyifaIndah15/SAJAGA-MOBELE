@@ -6,7 +6,8 @@ import '../widgets/profile_section.dart';
 import '../widgets/profile_menu_tile.dart';
 import '../widgets/reminder_tile.dart';
 import '../widgets/history_item_card.dart';
-import '../history/history_screen.dart';
+import '../history/medication_history_screen.dart';
+import '../history/meal_history_screen.dart';
 import '../../routes/app_routes.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -23,7 +24,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // Data profil dari Supabase.
   String _userName = 'Memuat profil...';
   bool _isLoadingProfile = true;
-
 
   String get _userEmail =>
       Supabase.instance.client.auth.currentUser?.email ?? '';
@@ -82,7 +82,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profil gagal dimuat dari database.')),
+        const SnackBar(
+          content: Text('Profil gagal dimuat dari database.'),
+        ),
       );
 
       debugPrint('Gagal memuat profil: $e');
@@ -132,9 +134,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: const EdgeInsets.all(
-            8,
-          ), // Diperbesar sedikit agar lebih proporsional
+          padding: const EdgeInsets.all(8),
           decoration: const BoxDecoration(
             color: AppColors.primary,
             shape: BoxShape.circle,
@@ -156,9 +156,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const Text(
           'SAJAGA',
           style: TextStyle(
-            fontFamily: 'PlusJakartaSans', // Memastikan font sesuai config
-            fontWeight:
-                FontWeight.w800, // Extra Bold agar terlihat seperti Logo
+            fontFamily: 'PlusJakartaSans',
+            fontWeight: FontWeight.w800,
             color: AppColors.primary,
             fontSize: 20,
             letterSpacing: 0.5,
@@ -203,7 +202,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     decoration: BoxDecoration(
                       color: AppColors.primary,
                       shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.white, width: 2),
+                      border: Border.all(
+                        color: AppColors.white,
+                        width: 2,
+                      ),
                     ),
                     child: const Icon(
                       Icons.edit,
@@ -227,7 +229,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            _userEmail.isNotEmpty ? _userEmail : 'Email tidak tersedia',
+            _userEmail.isNotEmpty
+                ? _userEmail
+                : 'Email tidak tersedia',
             style: const TextStyle(
               fontWeight: FontWeight.w400,
               fontSize: 12,
@@ -283,12 +287,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
       title: 'Riwayat Terpadu',
       icon: Icons.history,
       actionText: 'Lihat Semua',
+
+      // Navigasi mengikuti tab yang sedang aktif.
       onActionTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const HistoryScreen()),
+          MaterialPageRoute(
+            builder: (context) => _selectedHistoryTab == 0
+                ? const MedicationHistoryScreen()
+                : const MealHistoryScreen(),
+          ),
         );
       },
+
       child: Column(
         children: [
           _buildHistoryTab(),
@@ -307,15 +318,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       child: Row(
         children: [
-          _buildTabItem(title: "Riwayat Obat", index: 0),
-          _buildTabItem(title: "Riwayat Makan", index: 1),
+          _buildTabItem(
+            title: 'Riwayat Obat',
+            index: 0,
+          ),
+          _buildTabItem(
+            title: 'Riwayat Makan',
+            index: 1,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTabItem({required String title, required int index}) {
+  Widget _buildTabItem({
+    required String title,
+    required int index,
+  }) {
     final bool isSelected = _selectedHistoryTab == index;
+
     return Expanded(
       child: GestureDetector(
         onTap: () {
@@ -326,7 +347,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.white : Colors.transparent,
+            color: isSelected
+                ? AppColors.white
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             boxShadow: isSelected
                 ? [
@@ -342,9 +365,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Text(
               title,
               style: TextStyle(
-                color: isSelected ? AppColors.primary : AppColors.grey,
+                color: isSelected
+                    ? AppColors.primary
+                    : AppColors.grey,
                 fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                fontWeight: isSelected
+                    ? FontWeight.w600
+                    : FontWeight.w400,
               ),
             ),
           ),
@@ -353,14 +380,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Data riwayat contoh.
+  // Data riwayat sementara untuk ringkasan Profil.
   List<Widget> _getHistoryItems() {
     if (_selectedHistoryTab == 0) {
       return [
         HistoryItemCard(
           icon: Icons.medication,
           title: 'Paracetamol',
-          subtitle: 'Hari ini ΓÇó 08:05 WIB',
+          subtitle: 'Hari ini • 08:05 WIB',
           status: 'Diminum',
           isSuccess: true,
         ),
@@ -368,7 +395,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         HistoryItemCard(
           icon: Icons.medication,
           title: 'Vitamin C 500mg',
-          subtitle: 'Kemarin ΓÇó 20:00 WIB',
+          subtitle: 'Kemarin • 20:00 WIB',
           status: 'Diminum',
           isSuccess: true,
         ),
@@ -379,7 +406,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       HistoryItemCard(
         icon: Icons.wb_sunny,
         title: 'Sarapan Pagi',
-        subtitle: 'Hari ini ΓÇó 07:15 WIB',
+        subtitle: 'Hari ini • 07:15 WIB',
         status: 'Selesai',
         isSuccess: true,
       ),
@@ -387,7 +414,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       HistoryItemCard(
         icon: Icons.wb_sunny,
         title: 'Makan Siang',
-        subtitle: 'Hari ini ΓÇó 12:30 WIB',
+        subtitle: 'Hari ini • 12:30 WIB',
         status: 'Selesai',
         isSuccess: true,
       ),
@@ -454,7 +481,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
+                  onPressed: () =>
+                      Navigator.pop(dialogContext),
                   child: const Text(
                     'Batal',
                     style: TextStyle(
@@ -485,13 +513,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       if (!mounted) return;
 
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Gagal logout: $e')),
+                        SnackBar(
+                          content: Text('Gagal logout: $e'),
+                        ),
                       );
                     }
                   },
                   child: const Text(
-                    "Keluar",
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                    'Keluar',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -500,7 +532,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         },
         icon: const Icon(Icons.logout, size: 16),
         label: const Text(
-          "Keluar Akun",
+          'Keluar Akun',
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
@@ -522,7 +554,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           SizedBox(height: 2),
           Text(
-            "Waktunya Dijaga, Sehatnya Dijaga",
+            'Waktunya Dijaga, Sehatnya Dijaga',
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w400,
@@ -552,19 +584,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       onTap: (index) {
         if (index == 0) {
-          Navigator.pushReplacementNamed(context, AppRoutes.home);
+          Navigator.pushReplacementNamed(
+            context,
+            AppRoutes.home,
+          );
         }
       },
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.home_outlined),
           activeIcon: Icon(Icons.home),
-          label: "Beranda",
+          label: 'Beranda',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.person_outline),
           activeIcon: Icon(Icons.person),
-          label: "Profil",
+          label: 'Profil',
         ),
       ],
     );
@@ -587,7 +622,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // Dialog edit profil dan penyimpanan nama ke Supabase.
   void _showEditProfileDialog() {
-    final nameController = TextEditingController(text: _userName);
+    final nameController = TextEditingController(
+      text: _userName,
+    );
+
     bool saving = false;
 
     showDialog(
@@ -618,7 +656,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: saving ? null : () => Navigator.pop(dialogContext),
+              onPressed: saving
+                  ? null
+                  : () => Navigator.pop(dialogContext),
               child: const Text('Batal'),
             ),
             ElevatedButton(
@@ -632,24 +672,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onPressed: saving
                   ? null
                   : () async {
-                      final newName = nameController.text.trim();
+                      final newName =
+                          nameController.text.trim();
 
                       if (newName.isEmpty) {
-                        ScaffoldMessenger.of(this.context).showSnackBar(
+                        ScaffoldMessenger.of(
+                          this.context,
+                        ).showSnackBar(
                           const SnackBar(
-                            content: Text('Nama tidak boleh kosong.'),
+                            content: Text(
+                              'Nama tidak boleh kosong.',
+                            ),
                           ),
                         );
                         return;
                       }
 
-                      final supabase = Supabase.instance.client;
-                      final user = supabase.auth.currentUser;
+                      final supabase =
+                          Supabase.instance.client;
+                      final user =
+                          supabase.auth.currentUser;
 
                       if (user == null) {
-                        ScaffoldMessenger.of(this.context).showSnackBar(
+                        ScaffoldMessenger.of(
+                          this.context,
+                        ).showSnackBar(
                           const SnackBar(
-                            content: Text('Silakan login kembali.'),
+                            content: Text(
+                              'Silakan login kembali.',
+                            ),
                           ),
                         );
                         return;
@@ -682,16 +733,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         if (!mounted) return;
 
                         setState(() {
-                          _userName = result['name'] as String? ?? newName;
+                          _userName =
+                              result['name'] as String? ??
+                                  newName;
                         });
 
                         if (dialogContext.mounted) {
                           Navigator.pop(dialogContext);
                         }
 
-                        ScaffoldMessenger.of(this.context).showSnackBar(
+                        ScaffoldMessenger.of(
+                          this.context,
+                        ).showSnackBar(
                           const SnackBar(
-                            content: Text('Nama profil berhasil diperbarui!'),
+                            content: Text(
+                              'Nama profil berhasil diperbarui!',
+                            ),
                           ),
                         );
                       } catch (e) {
@@ -701,8 +758,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                         if (!mounted) return;
 
-                        ScaffoldMessenger.of(this.context).showSnackBar(
-                          SnackBar(content: Text('Gagal menyimpan nama: $e')),
+                        ScaffoldMessenger.of(
+                          this.context,
+                        ).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Gagal menyimpan nama: $e',
+                            ),
+                          ),
                         );
                       }
                     },
@@ -717,7 +780,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     )
                   : const Text(
                       'Simpan',
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
             ),
           ],

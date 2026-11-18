@@ -21,6 +21,7 @@ class MedicationCard extends StatelessWidget {
   final VoidCallback? onTapMinumSekarang;
   final VoidCallback? onTapAturJadwal;
   final VoidCallback? onTapAturUlang;
+  final VoidCallback? onTapSkip;
 
   const MedicationCard({
     super.key,
@@ -34,6 +35,7 @@ class MedicationCard extends StatelessWidget {
     this.onTapMinumSekarang,
     this.onTapAturJadwal,
     this.onTapAturUlang,
+    this.onTapSkip,
   });
 
   static const Color _blue = Color(0xFF008ACB);
@@ -272,38 +274,57 @@ class MedicationCard extends StatelessWidget {
             ),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
               decoration: const BoxDecoration(
                 color: _redPale,
                 border: Border(
                   top: BorderSide(color: Color(0xFFFFE0E0)),
                 ),
               ),
-              child: Row(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.info_outline,
-                    color: _red,
-                    size: 14,
-                  ),
-                  const SizedBox(width: 6),
-                  const Expanded(
-                    child: Text(
-                      'Jadwal terlewat lebih dari 1 jam. Silakan sesuaikan kembali jadwal minum obat Anda agar jeda dosis tetap aman.',
-                      style: TextStyle(
-                        fontFamily: 'PlusJakartaSans',
-                        fontSize: 9,
-                        height: 1.45,
+                  const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
                         color: _red,
+                        size: 14,
                       ),
-                    ),
+                      SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Jadwal terlewat lebih dari 1 jam. '
+                          'Silakan sesuaikan jadwal atau lewati '
+                          'jika dosis tidak dapat dijadwalkan kembali.',
+                          style: TextStyle(
+                            fontFamily: 'PlusJakartaSans',
+                            fontSize: 9,
+                            height: 1.45,
+                            color: _red,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 7),
-                  _buildOutlineAction(
-                    label: 'Atur Ulang',
-                    icon: Icons.refresh_rounded,
-                    onTap: onTapAturUlang,
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.end,
+                    children: [
+                      _buildOutlineAction(
+                        label: 'Lewati Jadwal',
+                        icon: Icons.skip_next_rounded,
+                        onTap: onTapSkip,
+                      ),
+                      _buildOutlineAction(
+                        label: 'Atur Ulang',
+                        icon: Icons.refresh_rounded,
+                        onTap: onTapAturUlang,
+                      ),
+                    ],
                   ),
                 ],
               ),
